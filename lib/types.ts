@@ -98,6 +98,16 @@ export const DEAL_TYPE_LABELS: Record<DealType, string> = {
   installment: 'Nasiya',
 }
 
+export interface Review {
+  id: string
+  sellerId: string
+  userId: string
+  userName: string
+  rating: number
+  text: string
+  createdAt: string
+}
+
 export const STATUS_LABELS: Record<PropertyStatus, string> = {
   ready: 'Tayyor uy',
   'half-ready': 'Yarim tayyor',
