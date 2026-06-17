@@ -11,9 +11,18 @@ import type { Property } from '@/lib/types'
 
 export default function MapPage() {
   const hydrated = useHydrated()
-  useEffect(() => { syncProperties() }, [])
+  const [properties, setProperties] = useState<Property[]>(() => getProperties())
+
+  useEffect(() => {
+    if (!hydrated) return
+    let active = true
+    syncProperties().then((synced) => {
+      if (active) setProperties(synced)
+    })
+    return () => { active = false }
+  }, [hydrated])
+
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
-  const properties = hydrated ? getProperties() : []
 
   if (!hydrated) {
     return <div className="flex-1 flex items-center justify-center"><LoadingSpinner /></div>

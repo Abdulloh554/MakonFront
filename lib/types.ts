@@ -48,6 +48,7 @@ export interface Property {
 
 export interface Seller {
   id: string
+  userId?: string
   name: string
   phone: string
   avatar: string

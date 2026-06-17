@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getCurrentUser, login, register, logout, getPropertiesBySeller, useHydrated, syncProperties } from '@/lib/store'
+import { getCurrentUser, login, register, logout, getPropertiesByUser, useHydrated, syncProperties, syncSellers } from '@/lib/store'
 import PropertyCard from '@/components/PropertyCard'
 import PropertyModal from '@/components/PropertyModal'
 import PageTransition from '@/components/PageTransition'
@@ -17,8 +17,16 @@ import { motion } from 'framer-motion'
 export default function ProfilePage() {
   const router = useRouter()
   const hydrated = useHydrated()
+  const [, setRefreshKey] = useState(0)
 
-  useEffect(() => { syncProperties() }, [])
+  useEffect(() => {
+    if (!hydrated) return
+    let active = true
+    Promise.all([syncProperties(), syncSellers()]).then(() => {
+      if (active) setRefreshKey((key) => key + 1)
+    })
+    return () => { active = false }
+  }, [hydrated])
 
   const [user, setUser] = useState<User | null>(() => {
     if (hydrated) return getCurrentUser()
@@ -30,23 +38,32 @@ export default function ProfilePage() {
   })
 
   useEffect(() => {
-    const u = getCurrentUser()
-    setUser(u)
-    setShowLogin(!u)
+    let active = true
+    Promise.resolve().then(() => {
+      if (!active) return
+      const u = getCurrentUser()
+      setUser(u)
+      setShowLogin(!u)
+    })
+    return () => { active = false }
   }, [hydrated])
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
 
   async function handleLogin(name: string, lastName: string, phone: string, password: string) {
     const user = await login(phone, password)
+    await Promise.all([syncProperties(), syncSellers()])
     setUser(getCurrentUser())
     setShowLogin(false)
+    setRefreshKey((key) => key + 1)
     return user
   }
 
   async function handleRegister(name: string, lastName: string, phone: string, password: string) {
     const user = await register(name, lastName, phone, password)
+    await Promise.all([syncProperties(), syncSellers()])
     setUser(getCurrentUser())
     setShowLogin(false)
+    setRefreshKey((key) => key + 1)
     return user
   }
 
@@ -73,7 +90,7 @@ export default function ProfilePage() {
     )
   }
 
-  const myProperties = getPropertiesBySeller(user.id)
+  const myProperties = getPropertiesByUser(user)
 
   return (
     <PageTransition>

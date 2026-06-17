@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, MapPin, Users, PlusCircle, MessageCircle, User } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { getCurrentUser, useHydrated } from '@/lib/store'
 
 const navItems = [
   { href: '/', label: 'Asosiy', icon: Home },
@@ -16,8 +17,10 @@ const navItems = [
 
 export default function Navbar() {
   const pathname = usePathname()
+  const hydrated = useHydrated()
 
   if (pathname.startsWith('/admin')) return null
+  if (pathname === '/profile' && hydrated && !getCurrentUser()) return null
 
   return (
     <>

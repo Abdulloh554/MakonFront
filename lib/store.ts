@@ -22,7 +22,10 @@ import { normalizePhone, isValidUzbekPhone } from './phone'
 // ─── Hydration ──────────────────────────────────────────────────────
 export function useHydrated(): boolean {
   const [mounted, setMounted] = useState(false)
-  useEffect(() => { setMounted(true) }, [])
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
   return mounted
 }
 
@@ -120,12 +123,14 @@ export function isAuthenticated(): boolean {
 }
 
 // ─── Properties ─────────────────────────────────────────────────────
-export async function syncProperties(): Promise<void> {
+export async function syncProperties(): Promise<Property[]> {
   try {
     const properties = await apiFetchProperties()
     setData(STORAGE_KEYS.properties, properties)
+    return properties
   } catch {
     // Keep local cache on failure
+    return getProperties()
   }
 }
 
@@ -202,12 +207,14 @@ export async function addProperty(
 }
 
 // ─── Sellers ────────────────────────────────────────────────────────
-export async function syncSellers(): Promise<void> {
+export async function syncSellers(): Promise<Seller[]> {
   try {
     const sellers = await apiFetchSellers()
     setData(STORAGE_KEYS.sellers, sellers)
+    return sellers
   } catch {
     // Keep local cache on failure
+    return getData<Seller[]>(STORAGE_KEYS.sellers, [])
   }
 }
 
@@ -247,6 +254,20 @@ export async function fetchSellerProperties(sellerId: string): Promise<Property[
 
 export function getPropertiesBySeller(sellerId: string): Property[] {
   return getProperties().filter((p) => p.sellerId === sellerId)
+}
+
+export function getSellerByUser(user: User): Seller | undefined {
+  return getData<Seller[]>(STORAGE_KEYS.sellers, []).find(
+    (s) => s.userId === user.id || s.phone === user.phone,
+  )
+}
+
+export function getPropertiesByUser(user: User): Property[] {
+  const seller = getSellerByUser(user)
+  const sellerId = seller?.id ?? user.id
+  return getProperties().filter(
+    (p) => p.sellerId === sellerId || p.sellerId === user.id,
+  )
 }
 
 // ─── Reviews ────────────────────────────────────────────────────────

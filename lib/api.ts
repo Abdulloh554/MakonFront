@@ -101,6 +101,7 @@ function mapProperty(p: Record<string, unknown>): Property {
 function mapSeller(s: Record<string, unknown>): Seller {
   return {
     id: toId((s.id ?? s._id) as string | { id?: string; _id?: string } | null | undefined),
+    userId: toId(s.userId as string | { id?: string; _id?: string } | null | undefined) || undefined,
     name: s.name as string,
     phone: s.phone as string,
     avatar: (s.avatar as string) || "/avatars/default.svg",
@@ -254,10 +255,20 @@ export async function apiCreateReview(data: {
 }
 
 // ─── Messages API ───────────────────────────────────────────────────
-export async function apiFetchMessages(userId: string): Promise<Message[]> {
-  const data = await request<Record<string, unknown>[]>(
-    `/messages?userId=${userId}`,
-  );
+export async function apiFetchMessages(conversationId: string): Promise<Message[]> {
+  let data: Record<string, unknown>[];
+  try {
+    data = await request<Record<string, unknown>[]>(
+      `/messages/${conversationId}`,
+    );
+  } catch (err) {
+    if (!(err instanceof Error) || !/404|not found/i.test(err.message)) {
+      throw err;
+    }
+    data = await request<Record<string, unknown>[]>(
+      `/messages?userId=${encodeURIComponent(conversationId)}`,
+    );
+  }
   return data.map(mapMessage);
 }
 

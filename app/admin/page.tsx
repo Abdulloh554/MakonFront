@@ -55,7 +55,7 @@ export default function AdminLoginPage() {
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input type="text" value={username} onChange={e => setUsername(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                  placeholder="Abdulloh_1404" />
+                  placeholder="qwerty" />
               </div>
             </div>
             <div>

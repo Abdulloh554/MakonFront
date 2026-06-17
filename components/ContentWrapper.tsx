@@ -1,12 +1,15 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
+import { getCurrentUser, useHydrated } from '@/lib/store'
 
 export default function ContentWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const hydrated = useHydrated()
   const isAdmin = pathname.startsWith('/admin')
+  const isLoginPage = pathname === '/profile' && hydrated && !getCurrentUser()
 
-  if (isAdmin) {
+  if (isAdmin || isLoginPage) {
     return (
       <main className="min-h-dvh flex flex-col w-full">
         {children}

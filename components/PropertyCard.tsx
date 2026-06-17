@@ -4,6 +4,7 @@ import type { Property } from '@/lib/types'
 import { MapPin, Maximize, BedDouble, Building2 } from 'lucide-react'
 import { PROPERTY_TYPE_LABELS, DEAL_TYPE_LABELS, STATUS_LABELS } from '@/lib/types'
 import { motion } from 'framer-motion'
+import { useState } from 'react'
 
 const dealTypeConfig: Record<string, { bg: string; text: string; border: string }> = {
   sale:        { bg: '#E6F1FB', text: '#0C447C', border: 'rgba(24,95,165,0.2)' },
@@ -30,6 +31,7 @@ interface PropertyCardProps {
 }
 
 export default function PropertyCard({ property, onClick }: PropertyCardProps) {
+  const [imgErr, setImgErr] = useState(false)
   const deal = dealTypeConfig[property.dealType] || dealTypeConfig.sale
   const status = statusConfig[property.status] || statusConfig.ready
 
@@ -47,12 +49,13 @@ export default function PropertyCard({ property, onClick }: PropertyCardProps) {
       {/* Image area */}
       <div className="relative h-44 md:h-48 bg-slate-100 overflow-hidden">
         <motion.img
-          src={property.images[0] || '/placeholder.svg'}
+          src={imgErr || !property.images[0] ? '/placeholder.svg' : property.images[0]}
           alt={property.title}
           className="w-full h-full object-cover"
           style={{ transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)' }}
           whileHover={{ scale: 1.06 }}
           loading="lazy"
+          onError={() => setImgErr(true)}
         />
         {/* Overlay gradients */}
         <div

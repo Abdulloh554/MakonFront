@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   X,
   MapPin,
@@ -154,6 +154,7 @@ export default function PropertyModal({
                 src={property.images[imgIndex] || "/placeholder.svg"}
                 alt={property.title}
                 className="w-full h-full object-cover absolute inset-0"
+                onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg' }}
               />
             </AnimatePresence>
             {/* Gradient overlay */}

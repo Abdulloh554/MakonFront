@@ -111,6 +111,8 @@ export default function MapView({ properties, onMarkerClick }: MapViewProps) {
     }
 
     for (const p of displayed) {
+      if (!p.location?.lat || !p.location?.lng) continue
+
       const price = formatPrice(p.price)
       const isActive = selectedId === p.id
 

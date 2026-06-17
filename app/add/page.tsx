@@ -37,7 +37,7 @@ export default function AddPage() {
 
     try {
       let { lat, lng } = form
-      if (form.address.trim()) {
+      if (lat === 0 && lng === 0 && form.address.trim()) {
         try {
           const res = await fetch(
             'https://nominatim.openstreetmap.org/search?format=json&q=' +
@@ -56,7 +56,7 @@ export default function AddPage() {
       if (form.imageFiles.length > 0) {
         images = await Promise.all(form.imageFiles.map(fileToBase64))
       } else {
-        images = ['https://picsum.photos/seed/default/600/400']
+        images = []
       }
 
       await addProperty({

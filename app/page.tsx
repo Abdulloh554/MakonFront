@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Sparkles } from 'lucide-react'
 import PropertyCard from '@/components/PropertyCard'
 import FilterBar from '@/components/FilterBar'
@@ -21,11 +21,20 @@ export default function HomePage() {
     minPrice: undefined, maxPrice: undefined, search: '',
   })
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
+  const [properties, setProperties] = useState<Property[]>([])
 
   // Sync from backend on mount
-  useEffect(() => { syncProperties() }, [])
-
-  const properties = useMemo(() => hydrated ? getFilteredProperties(filters) : [], [hydrated, filters])
+  useEffect(() => {
+    if (!hydrated) return
+    let active = true
+    Promise.resolve().then(() => {
+      if (active) setProperties(getFilteredProperties(filters))
+    })
+    syncProperties().then(() => {
+      if (active) setProperties(getFilteredProperties(filters))
+    })
+    return () => { active = false }
+  }, [hydrated, filters])
 
   if (!hydrated) {
     return <PageTransition><div className="flex-1 flex items-center justify-center"><LoadingSpinner /></div></PageTransition>
