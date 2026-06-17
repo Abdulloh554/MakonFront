@@ -8,7 +8,7 @@ import type {
   FilterOptions,
 } from "./types";
 
-const API_BASE = "/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 // ─── Token management ───────────────────────────────────────────────
 const TOKEN_KEY = "makon_jwt_token";
