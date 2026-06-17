@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { Message } from "@/lib/types";
+import type { Message } from "@/types";
 
 interface ConversationItemProps {
   message: Message;

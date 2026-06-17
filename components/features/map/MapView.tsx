@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Crosshair } from 'lucide-react'
-import type { Property } from '@/lib/types'
+import type { Property } from '@/types'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/ui/ToastProvider'
 

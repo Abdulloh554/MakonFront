@@ -1,7 +1,6 @@
 'use client'
 
-import type { Property, Seller, User, Message, Review, FilterOptions } from './types'
-import { useEffect, useState } from 'react'
+import type { Property, Seller, User, Message, Review, FilterOptions } from '../types'
 import {
   apiLogin,
   apiRegister,
@@ -16,72 +15,49 @@ import {
   apiFetchMe,
   clearToken,
   getToken,
-} from './api'
-import { normalizePhone, isValidUzbekPhone } from './phone'
+} from '../services/api'
+import { normalizePhone, isValidUzbekPhone } from '../utils/phone'
 
-// ─── Hydration ──────────────────────────────────────────────────────
-export function useHydrated(): boolean {
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setMounted(true))
-    return () => cancelAnimationFrame(id)
-  }, [])
-  return mounted
-}
+let _properties: Property[] = []
+let _sellers: Seller[] = []
+let _messages: Message[] = []
+let _reviews: Review[] = []
 
-// ─── Storage helpers ────────────────────────────────────────────────
-const STORAGE_KEYS = {
-  properties: 'makon_properties',
-  sellers: 'makon_sellers',
-  currentUser: 'makon_current_user',
-  messages: 'makon_messages',
-  reviews: 'makon_reviews',
-} as const
+const KEY_CURRENT_USER = 'makon_current_user'
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2)
 }
 
-function getData<T>(key: string, fallback: T): T {
-  if (typeof window === 'undefined') return fallback
+function getUserFromStorage(): User | null {
+  if (typeof window === 'undefined') return null
   try {
-    const raw = localStorage.getItem(key)
-    return raw ? JSON.parse(raw) : fallback
+    const raw = localStorage.getItem(KEY_CURRENT_USER)
+    return raw ? JSON.parse(raw) : null
   } catch {
-    return fallback
+    return null
   }
 }
 
-function setData<T>(key: string, data: T): void {
+function setUserToStorage(user: User | null): void {
   if (typeof window === 'undefined') return
   try {
-    localStorage.setItem(key, JSON.stringify(data))
-  } catch (err: unknown) {
-    if (err instanceof DOMException && err.name === 'QuotaExceededError') {
-      if (key === STORAGE_KEYS.properties && Array.isArray(data)) {
-        const stripped = (data as Property[]).map((p) => ({ ...p, images: [''] }))
-        try {
-          localStorage.setItem(key, JSON.stringify(stripped))
-          return
-        } catch {}
-      }
-      throw new Error('Xotira chegarasiga yetildi. Iltimos, eski elonlarni o\'chiring.')
+    if (user) {
+      localStorage.setItem(KEY_CURRENT_USER, JSON.stringify(user))
+    } else {
+      localStorage.removeItem(KEY_CURRENT_USER)
     }
-    throw err
+  } catch {
+    // ignore
   }
 }
 
 // ─── Auth ───────────────────────────────────────────────────────────
 export async function login(phone: string, password: string): Promise<User> {
   const normalized = normalizePhone(phone)
-
-  try {
-    const { user } = await apiLogin(normalized, password)
-    setData(STORAGE_KEYS.currentUser, user)
-    return user
-  } catch (err) {
-    throw err
-  }
+  const { user } = await apiLogin(normalized, password)
+  setUserToStorage(user)
+  return user
 }
 
 export async function register(firstName: string, lastName: string, phone: string, password: string): Promise<User> {
@@ -89,9 +65,8 @@ export async function register(firstName: string, lastName: string, phone: strin
   if (!isValidUzbekPhone(normalized)) {
     throw new Error("Noto'g'ri O'zbekiston telefon raqami")
   }
-
   const { user } = await apiRegister(firstName, lastName, normalized, password)
-  setData(STORAGE_KEYS.currentUser, user)
+  setUserToStorage(user)
   return user
 }
 
@@ -100,22 +75,22 @@ export async function restoreSession(): Promise<User | null> {
   if (!token) return null
   try {
     const user = await apiFetchMe()
-    setData(STORAGE_KEYS.currentUser, user)
+    setUserToStorage(user)
     return user
   } catch {
     clearToken()
-    setData(STORAGE_KEYS.currentUser, null)
+    setUserToStorage(null)
     return null
   }
 }
 
 export function getCurrentUser(): User | null {
-  return getData<User | null>(STORAGE_KEYS.currentUser, null)
+  return getUserFromStorage()
 }
 
 export function logout(): void {
   clearToken()
-  setData(STORAGE_KEYS.currentUser, null)
+  setUserToStorage(null)
 }
 
 export function isAuthenticated(): boolean {
@@ -124,50 +99,49 @@ export function isAuthenticated(): boolean {
 
 // ─── Properties ─────────────────────────────────────────────────────
 export async function syncProperties(): Promise<Property[]> {
-  try {
-    const properties = await apiFetchProperties()
-    setData(STORAGE_KEYS.properties, properties)
-    return properties
-  } catch {
-    // Keep local cache on failure
-    return getProperties()
-  }
+  const properties = await apiFetchProperties()
+  _properties = properties
+  return properties
 }
 
 export function getProperties(): Property[] {
-  return getData<Property[]>(STORAGE_KEYS.properties, [])
+  return _properties
 }
 
 export function getProperty(id: string): Property | undefined {
-  return getProperties().find((p) => p.id === id)
+  return _properties.find((p) => p.id === id)
 }
 
-export function getFilteredProperties(filters: FilterOptions): Property[] {
-  let props = getProperties()
+function filterProperties(props: Property[], filters: FilterOptions): Property[] {
+  let result = props
   if (filters.search) {
     const q = filters.search.toLowerCase()
-    props = props.filter(
+    result = result.filter(
       (p) =>
         p.title.toLowerCase().includes(q) ||
         p.description.toLowerCase().includes(q),
     )
   }
   if (filters.dealType !== 'all') {
-    props = props.filter((p) => p.dealType === filters.dealType)
+    result = result.filter((p) => p.dealType === filters.dealType)
   }
   if (filters.propertyType !== 'all') {
-    props = props.filter((p) => p.type === filters.propertyType)
+    result = result.filter((p) => p.type === filters.propertyType)
   }
   if (filters.status !== 'all') {
-    props = props.filter((p) => p.status === filters.status)
+    result = result.filter((p) => p.status === filters.status)
   }
   if (filters.minPrice !== undefined) {
-    props = props.filter((p) => p.price >= filters.minPrice!)
+    result = result.filter((p) => p.price >= filters.minPrice!)
   }
   if (filters.maxPrice !== undefined) {
-    props = props.filter((p) => p.price <= filters.maxPrice!)
+    result = result.filter((p) => p.price <= filters.maxPrice!)
   }
-  return props
+  return result
+}
+
+export function getFilteredProperties(filters: FilterOptions, source?: Property[]): Property[] {
+  return filterProperties(source ?? _properties, filters)
 }
 
 export async function addProperty(
@@ -178,7 +152,6 @@ export async function addProperty(
     throw new Error('User must be logged in to add property')
   }
 
-  // 1. Save to backend first
   const body: Record<string, unknown> = {
     title: property.title,
     description: property.description,
@@ -197,43 +170,28 @@ export async function addProperty(
   }
 
   const created = await apiCreateProperty(body)
-
-  // 2. Save to localStorage cache
-  const props = getProperties()
-  props.unshift(created)
-  setData(STORAGE_KEYS.properties, props)
-
+  _properties.unshift(created)
   return created
 }
 
 // ─── Sellers ────────────────────────────────────────────────────────
 export async function syncSellers(): Promise<Seller[]> {
-  try {
-    const sellers = await apiFetchSellers()
-    setData(STORAGE_KEYS.sellers, sellers)
-    return sellers
-  } catch {
-    // Keep local cache on failure
-    return getData<Seller[]>(STORAGE_KEYS.sellers, [])
-  }
+  const sellers = await apiFetchSellers()
+  _sellers = sellers
+  return sellers
 }
 
 export function getSellers(): Seller[] {
-  const sellers = getData<Seller[]>(STORAGE_KEYS.sellers, [])
-  const props = getProperties()
-  return sellers.map((s) => ({
+  return _sellers.map((s) => ({
     ...s,
-    totalListings: props.filter((p) => p.sellerId === s.id).length,
+    totalListings: _properties.filter((p) => p.sellerId === s.id).length,
   }))
 }
 
 export function getSeller(id: string): Seller | undefined {
-  const s = getData<Seller[]>(STORAGE_KEYS.sellers, []).find(
-    (s) => s.id === id,
-  )
+  const s = _sellers.find((s) => s.id === id)
   if (!s) return undefined
-  const props = getProperties()
-  return { ...s, totalListings: props.filter((p) => p.sellerId === id).length }
+  return { ...s, totalListings: _properties.filter((p) => p.sellerId === id).length }
 }
 
 export async function fetchSeller(id: string): Promise<Seller | undefined> {
@@ -248,24 +206,24 @@ export async function fetchSellerProperties(sellerId: string): Promise<Property[
   try {
     return await apiFetchSellerProperties(sellerId)
   } catch {
-    return getProperties().filter((p) => p.sellerId === sellerId)
+    return _properties.filter((p) => p.sellerId === sellerId)
   }
 }
 
 export function getPropertiesBySeller(sellerId: string): Property[] {
-  return getProperties().filter((p) => p.sellerId === sellerId)
+  return _properties.filter((p) => p.sellerId === sellerId)
 }
 
 export function getSellerByUser(user: User): Seller | undefined {
-  return getData<Seller[]>(STORAGE_KEYS.sellers, []).find(
+  return _sellers.find(
     (s) => s.userId === user.id || s.phone === user.phone,
   )
 }
 
-export function getPropertiesByUser(user: User): Property[] {
+export function getPropertiesByUser(user: User, source?: Property[]): Property[] {
   const seller = getSellerByUser(user)
   const sellerId = seller?.id ?? user.id
-  return getProperties().filter(
+  return (source ?? _properties).filter(
     (p) => p.sellerId === sellerId || p.sellerId === user.id,
   )
 }
@@ -274,17 +232,15 @@ export function getPropertiesByUser(user: User): Property[] {
 export async function fetchReviewsBySeller(sellerId: string): Promise<Review[]> {
   try {
     const reviews = await apiFetchReviewsBySeller(sellerId)
-    const all = getData<Review[]>(STORAGE_KEYS.reviews, [])
-    const filtered = all.filter((r) => r.sellerId !== sellerId)
-    setData(STORAGE_KEYS.reviews, [...filtered, ...reviews])
+    _reviews = _reviews.filter((r) => r.sellerId !== sellerId).concat(reviews)
     return reviews
   } catch {
-    return getData<Review[]>(STORAGE_KEYS.reviews, []).filter((r) => r.sellerId === sellerId)
+    return _reviews.filter((r) => r.sellerId === sellerId)
   }
 }
 
 export function getReviewsBySeller(sellerId: string): Review[] {
-  return getData<Review[]>(STORAGE_KEYS.reviews, []).filter((r) => r.sellerId === sellerId)
+  return _reviews.filter((r) => r.sellerId === sellerId)
 }
 
 export async function addReview(data: {
@@ -295,16 +251,13 @@ export async function addReview(data: {
   text: string
 }): Promise<Review> {
   const review = await apiCreateReview(data)
-  const all = getData<Review[]>(STORAGE_KEYS.reviews, [])
-  all.unshift(review)
-  setData(STORAGE_KEYS.reviews, all)
+  _reviews.unshift(review)
   return review
 }
 
 // ─── Messages ───────────────────────────────────────────────────────
 export function getMessages(userId: string): Message[] {
-  const all = getData<Message[]>(STORAGE_KEYS.messages, [])
-  return all
+  return _messages
     .filter((m) => m.fromUserId === userId || m.toUserId === userId)
     .sort(
       (a, b) =>
@@ -318,29 +271,37 @@ export function sendMessage(
   propertyId: string,
   text: string,
 ): Message {
-  // Optimistic local save
+  const clientId = generateId()
+  const now = new Date().toISOString()
   const msg: Message = {
-    id: generateId(),
+    id: clientId,
     fromUserId,
     toUserId,
     propertyId,
     text,
-    createdAt: new Date().toISOString(),
+    createdAt: now,
     read: false,
   }
-  const all = getData<Message[]>(STORAGE_KEYS.messages, [])
-  all.push(msg)
-  setData(STORAGE_KEYS.messages, all)
+  _messages.push(msg)
 
-  // Fire-and-forget to backend
   apiSendMessage(toUserId, propertyId || 'general', text)
     .then((serverMsg) => {
-      // Replace optimistic message with server version
-      const msgs = getData<Message[]>(STORAGE_KEYS.messages, [])
-      const idx = msgs.findIndex((m) => m.id === msg.id)
+      const idx = _messages.findIndex((m) => m.id === clientId)
       if (idx !== -1) {
-        msgs[idx] = serverMsg
-        setData(STORAGE_KEYS.messages, msgs)
+        _messages[idx] = serverMsg
+      } else {
+        const contentIdx = _messages.findIndex(
+          (m) =>
+            m.fromUserId === fromUserId &&
+            m.toUserId === toUserId &&
+            m.text === text &&
+            m.createdAt === now,
+        )
+        if (contentIdx !== -1) {
+          _messages[contentIdx] = serverMsg
+        } else {
+          _messages.push(serverMsg)
+        }
       }
     })
     .catch(() => {})
@@ -352,30 +313,21 @@ export function updateMessage(
   messageId: string,
   text: string,
 ): Message | null {
-  const all = getData<Message[]>(STORAGE_KEYS.messages, [])
-  const msg = all.find((m) => m.id === messageId)
+  const msg = _messages.find((m) => m.id === messageId)
   if (!msg) return null
   msg.text = text
-  setData(STORAGE_KEYS.messages, all)
   return msg
 }
 
 export function deleteMessage(messageId: string): void {
-  const all = getData<Message[]>(STORAGE_KEYS.messages, [])
-  const updated = all.filter((m) => m.id !== messageId)
-  setData(STORAGE_KEYS.messages, updated)
+  _messages = _messages.filter((m) => m.id !== messageId)
 }
 
 export function markMessageRead(messageId: string): void {
-  const all = getData<Message[]>(STORAGE_KEYS.messages, [])
-  const msg = all.find((m) => m.id === messageId)
-  if (msg) {
-    msg.read = true
-    setData(STORAGE_KEYS.messages, all)
-  }
+  const msg = _messages.find((m) => m.id === messageId)
+  if (msg) msg.read = true
 }
 
 export function getUnreadCount(userId: string): number {
-  const all = getData<Message[]>(STORAGE_KEYS.messages, [])
-  return all.filter((m) => m.toUserId === userId && !m.read).length
+  return _messages.filter((m) => m.toUserId === userId && !m.read).length
 }

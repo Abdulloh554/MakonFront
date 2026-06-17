@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Users, Building2, Store, MessageSquare, Star, Eye, TrendingUp, Search } from 'lucide-react'
-import { apiAdminStats, isAdminLoggedIn, type AdminStats } from '@/lib/admin'
+import { apiAdminStats, isAdminLoggedIn, type AdminStats } from '@/services/admin'
 import { useRouter } from 'next/navigation'
+import type React from 'react'
 
 const cards = [
   { key: 'users', label: 'Foydalanuvchilar', icon: Users, color: 'from-blue-500 to-blue-600', href: '/admin/users' },
@@ -41,7 +42,7 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         {cards.map((card, i) => {
-          const value = stats ? (stats as any)[card.key] : 0
+          const value = stats ? stats[card.key as keyof AdminStats] : 0
           const display = card.key === 'totalViews' ? (value as number).toLocaleString() : String(value)
           return (
             <motion.button key={card.key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
@@ -71,7 +72,7 @@ export default function AdminDashboard() {
   )
 }
 
-function QuickLink({ href, label, sub, icon: Icon }: { href: string; label: string; sub: string; icon: any }) {
+function QuickLink({ href, label, sub, icon: Icon }: { href: string; label: string; sub: string; icon: React.ComponentType<{ className?: string }> }) {
   const router = useRouter()
   return (
     <button onClick={() => router.push(href)}

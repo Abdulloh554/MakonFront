@@ -2,10 +2,10 @@
 
 import { Phone, ChevronRight, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
-import type { Seller } from "@/lib/types";
+import type { Seller } from "@/types";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/ToastProvider";
-import { getCurrentUser, getProperties } from "@/lib/store";
+import { getCurrentUser, getProperties } from "@/store";
 
 interface SellerCardProps {
   seller: Seller;

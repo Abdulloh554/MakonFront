@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, Building2, Store, MessageSquare,
   LogOut, Menu, X, ChevronRight, ShieldAlert
 } from 'lucide-react'
-import { isAdminLoggedIn, adminLogout, getAdminUser } from '@/lib/admin'
+import { isAdminLoggedIn, adminLogout, getAdminUser } from '@/services/admin'
 
 const navItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -21,11 +21,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter()
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => { setMounted(true) }, [])
-
-  if (!mounted) return null
 
   if (pathname === '/admin' || !isAdminLoggedIn()) {
     return <>{children}</>

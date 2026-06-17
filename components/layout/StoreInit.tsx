@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { syncProperties, syncSellers, restoreSession } from '@/lib/store'
+import { syncProperties, syncSellers, restoreSession } from '@/store'
 
 export default function StoreInit() {
   useEffect(() => {

@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { Star, Phone, MessageCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
-import type { Seller } from '@/lib/types'
-import { getCurrentUser, getProperties, sendMessage } from '@/lib/store'
+import type { Seller } from '@/types'
+import { getCurrentUser, getProperties, sendMessage } from '@/store'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/ToastProvider'
 

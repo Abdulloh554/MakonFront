@@ -1,15 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getCurrentUser, login, register, logout, getPropertiesByUser, useHydrated, syncProperties, syncSellers } from '@/lib/store'
-import PropertyCard from '@/components/PropertyCard'
-import PropertyModal from '@/components/PropertyModal'
-import PageTransition from '@/components/PageTransition'
-import StaggerGrid, { StaggerItem } from '@/components/StaggerGrid'
-import LoginForm from '@/components/profile/LoginForm'
-import ProfileHeader from '@/components/profile/ProfileHeader'
+import { getCurrentUser, login, register, logout, getPropertiesByUser, syncProperties, syncSellers } from '@/store'
+import { useHydrated } from '@/hooks/useHydrated'
+import PropertyCard from '@/components/features/properties/PropertyCard'
+import PropertyModal from '@/components/features/properties/PropertyModal'
+import PageTransition from '@/components/layout/PageTransition'
+import StaggerGrid, { StaggerItem } from '@/components/layout/StaggerGrid'
+import LoginForm from '@/components/features/auth/LoginForm'
+import ProfileHeader from '@/components/features/sellers/ProfileHeader'
 import EmptyState from '@/components/ui/EmptyState'
-import type { User, Property } from '@/lib/types'
+import type { User, Property } from '@/types'
 import { Home, Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -17,13 +18,15 @@ import { motion } from 'framer-motion'
 export default function ProfilePage() {
   const router = useRouter()
   const hydrated = useHydrated()
-  const [, setRefreshKey] = useState(0)
+  const [syncedProperties, setSyncedProperties] = useState<Property[]>([])
 
   useEffect(() => {
     if (!hydrated) return
     let active = true
-    Promise.all([syncProperties(), syncSellers()]).then(() => {
-      if (active) setRefreshKey((key) => key + 1)
+    Promise.all([syncProperties(), syncSellers()]).then(([syncedProps]) => {
+      if (active) {
+        setSyncedProperties(syncedProps)
+      }
     })
     return () => { active = false }
   }, [hydrated])
@@ -51,19 +54,19 @@ export default function ProfilePage() {
 
   async function handleLogin(name: string, lastName: string, phone: string, password: string) {
     const user = await login(phone, password)
-    await Promise.all([syncProperties(), syncSellers()])
+    const [syncedProps] = await Promise.all([syncProperties(), syncSellers()])
     setUser(getCurrentUser())
     setShowLogin(false)
-    setRefreshKey((key) => key + 1)
+    setSyncedProperties(syncedProps)
     return user
   }
 
   async function handleRegister(name: string, lastName: string, phone: string, password: string) {
     const user = await register(name, lastName, phone, password)
-    await Promise.all([syncProperties(), syncSellers()])
+    const [syncedProps] = await Promise.all([syncProperties(), syncSellers()])
     setUser(getCurrentUser())
     setShowLogin(false)
-    setRefreshKey((key) => key + 1)
+    setSyncedProperties(syncedProps)
     return user
   }
 
@@ -90,7 +93,9 @@ export default function ProfilePage() {
     )
   }
 
-  const myProperties = getPropertiesByUser(user)
+  const myProperties = syncedProperties.length > 0
+    ? getPropertiesByUser(user, syncedProperties)
+    : getPropertiesByUser(user)
 
   return (
     <PageTransition>

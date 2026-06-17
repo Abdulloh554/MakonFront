@@ -3,13 +3,13 @@
 import { useState, useCallback } from "react";
 import { UserIcon, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { login } from "@/lib/store";
-import type { User } from "@/lib/types";
+import { login } from "@/store";
+import type { User } from "@/types";
 import {
   normalizePhone,
   isValidUzbekPhone,
   formatLocalPhone,
-} from "@/lib/phone";
+} from "@/utils/phone";
 
 interface LoginFormProps {
   onLogin: (name: string, lastName: string, phone: string, password: string) => Promise<User>;

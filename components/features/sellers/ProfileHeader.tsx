@@ -2,7 +2,7 @@
 
 import { LogOut, Home, Phone } from 'lucide-react'
 import { motion } from 'framer-motion'
-import type { User } from '@/lib/types'
+import type { User } from '@/types'
 
 interface ProfileHeaderProps {
   user: User

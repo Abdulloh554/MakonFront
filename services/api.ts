@@ -6,9 +6,32 @@ import type {
   Review,
   FloorPlan,
   FilterOptions,
-} from "./types";
+} from "../types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
+
+function getApiOrigin(): string {
+  if (API_BASE.startsWith("http://") || API_BASE.startsWith("https://")) {
+    return new URL(API_BASE).origin;
+  }
+  return "";
+}
+
+function resolveImageUrl(url: string): string {
+  if (!url) return "";
+  if (
+    url.startsWith("http://") ||
+    url.startsWith("https://") ||
+    url.startsWith("data:") ||
+    url.startsWith("blob:")
+  ) {
+    return url;
+  }
+  if (url.startsWith("/api/uploads/")) {
+    return `${getApiOrigin()}${url}`;
+  }
+  return url;
+}
 
 // ─── Token management ───────────────────────────────────────────────
 const TOKEN_KEY = "makon_jwt_token";
@@ -81,7 +104,7 @@ function mapProperty(p: Record<string, unknown>): Property {
     title: p.title as string,
     description: p.description as string,
     price: p.price as number,
-    images: (p.images as string[]) ?? [],
+    images: ((p.images as string[]) ?? []).map(resolveImageUrl),
     location: (p.location ?? { lat: 0, lng: 0, address: "" }) as Property["location"],
     type: p.type as Property["type"],
     dealType: p.dealType as Property["dealType"],
@@ -159,6 +182,15 @@ export async function apiRegister(firstName: string, lastName: string, phone: st
 export async function apiFetchMe(): Promise<User> {
   const data = await request<Record<string, unknown>>("/auth/me");
   return mapUser(data);
+}
+
+// ─── Image Upload API (hash ID based) ───────────────────────────────
+export async function apiUploadImage(base64DataUri: string): Promise<string> {
+  const data = await request<{ url: string }>("/images/upload", {
+    method: "POST",
+    body: JSON.stringify({ image: base64DataUri }),
+  });
+  return data.url;
 }
 
 // ─── Properties API ─────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, useState, useEffect, useRef, useMemo } from "react";
-import type { Message } from "@/lib/types";
+import { Suspense, useState, useEffect, useRef, useMemo, useCallback, startTransition } from "react";
+import type { Message, Seller } from "@/types";
 import {
   getCurrentUser,
   getProperty,
@@ -10,14 +10,14 @@ import {
   getMessages,
   updateMessage,
   deleteMessage,
-  useHydrated,
-} from "@/lib/store";
-import { apiFetchMessages } from "@/lib/api";
+} from "@/store";
+import { useHydrated } from "@/hooks/useHydrated";
+import { apiFetchMessages } from "@/services/api";
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { ArrowLeft, MessageSquare } from "lucide-react";
-import AuthPrompt from "@/components/AuthPrompt";
-import PageTransition from "@/components/PageTransition";
+import AuthPrompt from "@/components/features/auth/AuthPrompt";
+import PageTransition from "@/components/layout/PageTransition";
 import PageHeader from "@/components/ui/PageHeader";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import EmptyState from "@/components/ui/EmptyState";
@@ -30,7 +30,7 @@ function MessagesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const propertyId = searchParams.get("property");
-  const sellerId = searchParams.get("sellerId");
+  const sellerIdParam = searchParams.get("sellerId");
   const chatEndRef = useRef<HTMLDivElement>(null);
   const hydrated = useHydrated();
 
@@ -43,16 +43,90 @@ function MessagesContent() {
   const [serverError, setServerError] = useState(false);
   const [loadingRemoteMessages, setLoadingRemoteMessages] = useState(false);
 
+  const resolveUserId = useCallback((id: string): string => {
+    const seller = getSeller(id)
+    if (seller && seller.userId) return seller.userId
+    return id
+  }, [])
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [propertyId, sellerId, user, serverMessages]);
+  }, [propertyId, sellerIdParam, user, serverMessages]);
+
+  const property = propertyId ? getProperty(propertyId) : null;
+  const myMessages = user ? getMessages(user.id) : [];
+
+  const conversationPartnerId = useMemo(() => {
+    if (!user) return null;
+    if (propertyId && property) {
+      const sellerUserId = resolveUserId(property.sellerId)
+      if (sellerUserId !== user.id) return sellerUserId
+      const existing = myMessages.find(
+        (m) => m.propertyId === propertyId && m.fromUserId !== user.id,
+      );
+      return existing ? resolveUserId(existing.fromUserId) : null;
+    }
+    if (!sellerIdParam) return null;
+    const resolvedSeller = resolveUserId(sellerIdParam)
+    if (resolvedSeller !== user.id) return resolvedSeller
+    const existing = myMessages.find(
+      (m) =>
+        m.propertyId === "general" &&
+        (m.fromUserId === sellerIdParam || m.toUserId === sellerIdParam),
+    );
+    if (!existing) return null;
+    const otherId = existing.fromUserId === user.id
+      ? existing.toUserId
+      : existing.fromUserId;
+    return resolveUserId(otherId);
+  }, [user, propertyId, property, sellerIdParam, myMessages, resolveUserId]);
+
+  const displaySeller = useMemo(() => {
+    if (property) return getSeller(property.sellerId)
+    if (sellerIdParam && sellerIdParam !== user?.id) return getSeller(sellerIdParam)
+    if (conversationPartnerId) return getSeller(conversationPartnerId)
+    return null
+  }, [property, sellerIdParam, user, conversationPartnerId])
+
+  useEffect(() => {
+    if (!hydrated || !user || !conversationPartnerId) {
+      return;
+    }
+
+    startTransition(() => setServerError(false))
+
+    apiFetchMessages(conversationPartnerId)
+      .then((messages) => {
+        if (messages.length === 0 && myMessages.length > 0) {
+          setServerMessages(null);
+        } else {
+          setServerMessages(messages);
+        }
+      })
+      .catch(() => {
+        setServerMessages(null);
+        setServerError(true);
+      })
+      .finally(() => {
+        setLoadingRemoteMessages(false);
+      });
+  }, [hydrated, user?.id, conversationPartnerId, myMessages.length]);
+
+  const chatMessages =
+    serverMessages !== null
+      ? serverMessages
+      : propertyId
+        ? myMessages.filter((m) => m.propertyId === propertyId)
+        : conversationPartnerId
+          ? myMessages.filter(
+              (m) => m.toUserId === conversationPartnerId || m.fromUserId === conversationPartnerId,
+            )
+          : [];
 
   function handleSend() {
     if (!user || !newMessage.trim()) return;
-    const targetUserId =
-      conversationPartnerId ||
-      (sellerId && sellerId !== user.id ? sellerId : null);
-    if (!targetUserId) return;
+    const targetId = conversationPartnerId
+    if (!targetId) return;
 
     if (editingMessageId) {
       const updatedMessage = updateMessage(editingMessageId, newMessage.trim());
@@ -71,7 +145,7 @@ function MessagesContent() {
 
     const sentMessage = sendMessage(
       user.id,
-      targetUserId,
+      targetId,
       propertyId || "general",
       newMessage.trim(),
     );
@@ -81,33 +155,6 @@ function MessagesContent() {
       prev ? [...prev, sentMessage] : [sentMessage],
     );
   }
-
-  const property = propertyId ? getProperty(propertyId) : null;
-  const myMessages = user ? getMessages(user.id) : [];
-
-  const conversationPartnerId = useMemo(() => {
-    if (!user) return null;
-    if (propertyId && property) {
-      if (property.sellerId !== user.id) {
-        return property.sellerId;
-      }
-      const existing = myMessages.find(
-        (m) => m.propertyId === propertyId && m.fromUserId !== user.id,
-      );
-      return existing ? existing.fromUserId : null;
-    }
-    if (!sellerId) return null;
-    if (sellerId !== user.id) return sellerId;
-    const existing = myMessages.find(
-      (m) =>
-        m.propertyId === "general" &&
-        (m.fromUserId === sellerId || m.toUserId === sellerId),
-    );
-    if (!existing) return null;
-    return existing.fromUserId === user.id
-      ? existing.toUserId
-      : existing.fromUserId;
-  }, [user, propertyId, property, sellerId, myMessages]);
 
   const partnerConversations = useMemo(() => {
     if (!user) return [];
@@ -133,12 +180,24 @@ function MessagesContent() {
 
       const property =
         m.propertyId !== "general" ? getProperty(m.propertyId) : null;
+      let sellerName: string | null = null
+      if (property) {
+        const s = getSeller(property.sellerId)
+        if (s) sellerName = s.name
+      } else {
+        const s = getSeller(partnerId)
+        if (s) sellerName = s.name
+        if (!sellerName) {
+          const allSellers = [getSeller(partnerId)]
+          for (const s of allSellers) {
+            if (s?.userId === partnerId) { sellerName = s.name; break }
+          }
+        }
+      }
       map.set(partnerId, {
         message: m,
         propertyTitle: property ? property.title : null,
-        sellerName: property
-          ? (getSeller(property.sellerId)?.name ?? null)
-          : (getSeller(partnerId)?.name ?? null),
+        sellerName,
         isGeneral: m.propertyId === "general" || !property,
       });
     });
@@ -149,51 +208,6 @@ function MessagesContent() {
         new Date(a.message.createdAt).getTime(),
     );
   }, [myMessages, user]);
-
-  const targetSellerId = useMemo(() => {
-    if (property) return property.sellerId;
-    if (sellerId && sellerId !== user?.id) return sellerId;
-    return null;
-  }, [property, sellerId, user]);
-
-  useEffect(() => {
-    if (!hydrated || !user || !conversationPartnerId) {
-      setServerMessages(null);
-      setServerError(false);
-      return;
-    }
-
-    setLoadingRemoteMessages(true);
-    setServerError(false);
-
-    apiFetchMessages(conversationPartnerId)
-      .then((messages) => {
-        if (messages.length === 0 && myMessages.length > 0) {
-          setServerMessages(null);
-        } else {
-          setServerMessages(messages);
-        }
-      })
-      .catch(() => {
-        setServerMessages(null);
-        setServerError(true);
-      })
-      .finally(() => {
-        setLoadingRemoteMessages(false);
-      });
-  }, [hydrated, user?.id, conversationPartnerId, myMessages.length]);
-
-  const chatSeller = targetSellerId ? getSeller(targetSellerId) : null;
-  const chatMessages =
-    serverMessages !== null
-      ? serverMessages
-      : propertyId
-        ? myMessages.filter((m) => m.propertyId === propertyId)
-        : sellerId
-          ? myMessages.filter(
-              (m) => m.toUserId === sellerId || m.fromUserId === sellerId,
-            )
-          : [];
 
   function handleEditMessage(message: Message) {
     setEditingMessageId(message.id);
@@ -222,7 +236,7 @@ function MessagesContent() {
       <PageHeader title="Xabarlar" />
 
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden px-4 md:px-6 lg:px-8 pb-6">
-        {(propertyId && property) || sellerId ? (
+         {(propertyId && property) || sellerIdParam || conversationPartnerId ? (
           <div className="flex flex-col flex-1 min-h-0 max-w-2xl mx-auto w-full">
             <div className="flex flex-col h-full min-h-0 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm">
               <div className="flex flex-col items-center gap-3 px-5 py-5 border-b border-slate-200 text-center">
@@ -239,13 +253,13 @@ function MessagesContent() {
                   <p className="text-sm font-semibold text-gray-900">
                     {property
                       ? property.title
-                      : chatSeller
-                        ? chatSeller.name
+                      : displaySeller
+                        ? displaySeller.name
                         : "Sotuvchi bilan suhbat"}
                   </p>
-                  {chatSeller && (
+                  {displaySeller && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Sotuvchi: {chatSeller.name}
+                      Sotuvchi: {displaySeller.name}
                     </p>
                   )}
                 </div>
@@ -296,7 +310,7 @@ function MessagesContent() {
               </div>
             </div>
           </div>
-        ) : (
+        ) : conversationPartnerId ? null : (
           <div className="space-y-2 pt-4">
             {myMessages.length === 0 ? (
               <EmptyState
@@ -309,11 +323,12 @@ function MessagesContent() {
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-1">
                   Barcha xabarlar
                 </p>
-                {partnerConversations.map((conv, i) => {
-                  const partnerId =
+                  {partnerConversations.map((conv, i) => {
+                  const rawPartnerId =
                     conv.message.fromUserId === user?.id
                       ? conv.message.toUserId
                       : conv.message.fromUserId;
+                  const partnerId = resolveUserId(rawPartnerId);
                   return (
                     <ConversationItem
                       key={partnerId}

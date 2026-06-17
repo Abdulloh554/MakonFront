@@ -1,16 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, startTransition } from 'react'
 import { Sparkles } from 'lucide-react'
-import PropertyCard from '@/components/PropertyCard'
-import FilterBar from '@/components/FilterBar'
-import PropertyModal from '@/components/PropertyModal'
-import PageTransition from '@/components/PageTransition'
-import StaggerGrid, { StaggerItem } from '@/components/StaggerGrid'
+import PropertyCard from '@/components/features/properties/PropertyCard'
+import FilterBar from '@/components/features/properties/FilterBar'
+import PropertyModal from '@/components/features/properties/PropertyModal'
+import PageTransition from '@/components/layout/PageTransition'
+import StaggerGrid, { StaggerItem } from '@/components/layout/StaggerGrid'
 import EmptyState from '@/components/ui/EmptyState'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
-import { getFilteredProperties, useHydrated, syncProperties } from '@/lib/store'
-import type { FilterOptions, Property } from '@/lib/types'
+import { getFilteredProperties, syncProperties } from '@/store'
+import { useHydrated } from '@/hooks/useHydrated'
+import type { FilterOptions, Property } from '@/types'
 import { motion } from 'framer-motion'
 import { SearchX } from 'lucide-react'
 
@@ -27,11 +28,10 @@ export default function HomePage() {
   useEffect(() => {
     if (!hydrated) return
     let active = true
-    Promise.resolve().then(() => {
-      if (active) setProperties(getFilteredProperties(filters))
-    })
-    syncProperties().then(() => {
-      if (active) setProperties(getFilteredProperties(filters))
+    const cached = getFilteredProperties(filters)
+    startTransition(() => setProperties(cached))
+    syncProperties().then((synced) => {
+      if (active) setProperties(getFilteredProperties(filters, synced))
     })
     return () => { active = false }
   }, [hydrated, filters])

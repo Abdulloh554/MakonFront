@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, startTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
-import { apiAdminSellers, apiAdminDeleteSeller, isAdminLoggedIn } from '@/lib/admin'
+import { apiAdminSellers, apiAdminDeleteSeller, isAdminLoggedIn } from '@/services/admin'
 
 export default function AdminSellers() {
   const router = useRouter()
@@ -13,12 +13,7 @@ export default function AdminSellers() {
   const [totalPages, setTotalPages] = useState(0)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (!isAdminLoggedIn()) { router.replace('/admin'); return }
-    load()
-  }, [page])
-
-  async function load() {
+  const load = async () => {
     setLoading(true)
     try {
       const res = await apiAdminSellers(page, 20)
@@ -28,6 +23,11 @@ export default function AdminSellers() {
     } catch { router.replace('/admin') }
     setLoading(false)
   }
+
+  useEffect(() => {
+    if (!isAdminLoggedIn()) { router.replace('/admin'); return }
+    startTransition(() => load())
+  }, [page])
 
   async function handleDelete(id: string, name: string) {
     if (!confirm(`"${name}" — sotuvchini o'chirishni tasdiqlaysizmi?`)) return
@@ -54,8 +54,8 @@ export default function AdminSellers() {
                 <th className="px-4 py-3">Nomi</th>
                 <th className="px-4 py-3">Telefon</th>
                 <th className="px-4 py-3">Reyting</th>
-                <th className="px-4 py-3">E'lonlar</th>
-                <th className="px-4 py-3">Qo'shilgan</th>
+                <th className="px-4 py-3">E&apos;lonlar</th>
+                <th className="px-4 py-3">Qo&apos;shilgan</th>
                 <th className="px-4 py-3 text-right">Amal</th>
               </tr>
             </thead>

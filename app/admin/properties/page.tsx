@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, startTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Trash2, ChevronLeft, ChevronRight, Search } from 'lucide-react'
-import { apiAdminProperties, apiAdminDeleteProperty, isAdminLoggedIn } from '@/lib/admin'
+import { apiAdminProperties, apiAdminDeleteProperty, isAdminLoggedIn } from '@/services/admin'
 
 const dealLabels: Record<string, string> = { daily: 'Kunlik', sale: 'Sotiladi', rent: 'Ijara', installment: 'Nasiya' }
 const typeLabels: Record<string, string> = { apartment: 'Kvartira', house: 'Hovli', cottage: 'Kottej', dacha: 'Dacha', commercial: 'Tijorat', land: 'Yer' }
@@ -18,12 +18,7 @@ export default function AdminProperties() {
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState<Record<string, string>>({})
 
-  useEffect(() => {
-    if (!isAdminLoggedIn()) { router.replace('/admin'); return }
-    load()
-  }, [page, filters])
-
-  async function load() {
+  const load = async () => {
     setLoading(true)
     try {
       const res = await apiAdminProperties(page, 20, filters)
@@ -33,6 +28,11 @@ export default function AdminProperties() {
     } catch { router.replace('/admin') }
     setLoading(false)
   }
+
+  useEffect(() => {
+    if (!isAdminLoggedIn()) { router.replace('/admin'); return }
+    startTransition(() => load())
+  }, [page, filters])
 
   async function handleDelete(id: string, title: string) {
     if (!confirm(`"${title}" — e'lonni o'chirishni tasdiqlaysizmi?`)) return
@@ -46,7 +46,7 @@ export default function AdminProperties() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">E'lonlar</h1>
+          <h1 className="text-xl font-bold text-gray-900">E&apos;lonlar</h1>
           <p className="text-sm text-gray-500 mt-0.5">Jami: {total}</p>
         </div>
       </div>
@@ -97,7 +97,7 @@ export default function AdminProperties() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs max-w-[150px] truncate">
-                    {String((p.location as Record<string, unknown>)?.address || (p as any).address || '-')}
+                    {String((p.location as Record<string, unknown>)?.address || '-')}
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{String(p.createdAt || '').slice(0, 10) || '-'}</td>
                   <td className="px-4 py-3 text-right">
@@ -109,7 +109,7 @@ export default function AdminProperties() {
                 </tr>
               ))}
               {properties.length === 0 && (
-                <tr><td colSpan={8} className="px-4 py-8 text-center text-sm text-gray-400">E'lonlar topilmadi</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-sm text-gray-400">E&apos;lonlar topilmadi</td></tr>
               )}
             </tbody>
           </table>

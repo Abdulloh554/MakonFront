@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import ContentWrapper from "@/components/ContentWrapper";
+import Navbar from "@/components/layout/Navbar";
+import ContentWrapper from "@/components/layout/ContentWrapper";
 import ToastProvider from "@/components/ui/ToastProvider";
-import StoreInit from "@/components/StoreInit";
-import SplashScreen from "@/components/SplashScreen";
+import StoreInit from "@/components/layout/StoreInit";
+import SplashScreen from "@/components/layout/SplashScreen";
 
 export const viewport: Viewport = {
   width: "device-width",

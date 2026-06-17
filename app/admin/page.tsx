@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ShieldAlert, Eye, EyeOff, Lock, User } from 'lucide-react'
-import { apiAdminLogin, isAdminLoggedIn } from '@/lib/admin'
+import { apiAdminLogin, isAdminLoggedIn } from '@/services/admin'
 
 export default function AdminLoginPage() {
   const router = useRouter()

@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { isAuthenticated, login, register as storeRegister } from "@/lib/store";
+import { isAuthenticated, login, register as storeRegister } from "@/store";
 import {
   normalizePhone,
   isValidUzbekPhone,
   formatLocalPhone,
-} from "@/lib/phone";
+} from "@/utils/phone";
 import { LogIn, X, Loader2, Eye, EyeOff } from "lucide-react";
 
 interface AuthGuardProps {
@@ -16,14 +16,9 @@ interface AuthGuardProps {
 
 export default function AuthGuard({ children }: AuthGuardProps) {
   const router = useRouter();
-  const [auth, setAuth] = useState(false);
-  const [showLogin, setShowLogin] = useState(true);
-
-  useEffect(() => {
-    const authed = isAuthenticated();
-    setAuth(authed);
-    setShowLogin(!authed);
-  }, []);
+  const authed = isAuthenticated();
+  const [auth, setAuth] = useState(authed);
+  const [showLogin, setShowLogin] = useState(!authed);
   const [name, setName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");

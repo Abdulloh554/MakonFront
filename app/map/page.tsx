@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import PropertyModal from '@/components/PropertyModal'
+import PropertyModal from '@/components/features/properties/PropertyModal'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
-const MapView = dynamic(() => import('@/components/MapView'), { ssr: false })
-import { getProperties, useHydrated, syncProperties } from '@/lib/store'
-import type { Property } from '@/lib/types'
+const MapView = dynamic(() => import('@/components/features/map/MapView'), { ssr: false })
+import { getProperties, syncProperties } from '@/store'
+import { useHydrated } from '@/hooks/useHydrated'
+import type { Property } from '@/types'
 
 export default function MapPage() {
   const hydrated = useHydrated()

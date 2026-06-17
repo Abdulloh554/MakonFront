@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, MapPin, Users, PlusCircle, MessageCircle, User } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { getCurrentUser, useHydrated } from '@/lib/store'
+import { getCurrentUser } from '@/store'
+import { useHydrated } from '@/hooks/useHydrated'
 
 const navItems = [
   { href: '/', label: 'Asosiy', icon: Home },

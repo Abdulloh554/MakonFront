@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { SlidersHorizontal, X, Search } from 'lucide-react'
-import type { FilterOptions } from '@/lib/types'
-import type { DealType, PropertyType, PropertyStatus } from '@/lib/types'
+import type { FilterOptions } from '@/types'
+import type { DealType, PropertyType, PropertyStatus } from '@/types'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const dealTypes: { value: DealType | 'all'; label: string; emoji: string }[] = [

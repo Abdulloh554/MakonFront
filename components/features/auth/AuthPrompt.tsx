@@ -2,8 +2,8 @@
 
 import { useRouter } from 'next/navigation'
 import Modal from '@/components/ui/Modal'
-import AuthPromptContent from '@/components/auth/AuthPromptContent'
-import AuthPromptActions from '@/components/auth/AuthPromptActions'
+import AuthPromptContent from './AuthPromptContent'
+import AuthPromptActions from './AuthPromptActions'
 
 interface AuthPromptProps {
   onClose?: () => void

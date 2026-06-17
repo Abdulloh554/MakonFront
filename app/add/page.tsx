@@ -2,13 +2,15 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getCurrentUser, addProperty, useHydrated } from '@/lib/store'
-import AuthRequired from '@/components/AuthRequired'
-import PageTransition from '@/components/PageTransition'
+import { getCurrentUser, addProperty } from '@/store'
+import { useHydrated } from '@/hooks/useHydrated'
+import { apiUploadImage } from '@/services/api'
+import AuthRequired from '@/components/features/auth/AuthRequired'
+import PageTransition from '@/components/layout/PageTransition'
 import PageHeader from '@/components/ui/PageHeader'
 import PropertyForm from '@/components/properties/PropertyForm'
 import type { PropertyFormData } from '@/components/properties/PropertyForm'
-import type { PropertyType, DealType, PropertyStatus } from '@/lib/types'
+import type { PropertyType, DealType, PropertyStatus } from '@/types'
 
 export default function AddPage() {
   const router = useRouter()
@@ -54,7 +56,8 @@ export default function AddPage() {
 
       let images: string[]
       if (form.imageFiles.length > 0) {
-        images = await Promise.all(form.imageFiles.map(fileToBase64))
+        const base64Images = await Promise.all(form.imageFiles.map(fileToBase64))
+        images = await Promise.all(base64Images.map(apiUploadImage))
       } else {
         images = []
       }

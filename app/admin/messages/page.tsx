@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { apiAdminMessages, isAdminLoggedIn } from '@/lib/admin'
+import { apiAdminMessages, isAdminLoggedIn } from '@/services/admin'
 
 export default function AdminMessages() {
   const router = useRouter()
@@ -15,19 +15,18 @@ export default function AdminMessages() {
 
   useEffect(() => {
     if (!isAdminLoggedIn()) { router.replace('/admin'); return }
-    load()
+    const run = async () => {
+      setLoading(true)
+      try {
+        const res = await apiAdminMessages(page, 20)
+        setMessages(res.data)
+        setTotal(res.total)
+        setTotalPages(res.totalPages)
+      } catch { router.replace('/admin') }
+      setLoading(false)
+    }
+    run()
   }, [page])
-
-  async function load() {
-    setLoading(true)
-    try {
-      const res = await apiAdminMessages(page, 20)
-      setMessages(res.data)
-      setTotal(res.total)
-      setTotalPages(res.totalPages)
-    } catch { router.replace('/admin') }
-    setLoading(false)
-  }
 
   if (loading) return <div className="flex justify-center py-12"><span className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" /></div>
 
@@ -46,7 +45,7 @@ export default function AdminMessages() {
                 <th className="px-4 py-3">Kimdan</th>
                 <th className="px-4 py-3">Kimga</th>
                 <th className="px-4 py-3">Xabar</th>
-                <th className="px-4 py-3">O'qilgan</th>
+                <th className="px-4 py-3">O&apos;qilgan</th>
                 <th className="px-4 py-3">Vaqti</th>
               </tr>
             </thead>
@@ -58,7 +57,7 @@ export default function AdminMessages() {
                   <td className="px-4 py-3 text-gray-600 max-w-[300px] truncate">{String(m.text || '-')}</td>
                   <td className="px-4 py-3">
                     {m.read ? (
-                      <span className="px-2 py-0.5 rounded-full bg-green-50 text-green-600 text-[11px] font-medium">O'qilgan</span>
+                      <span className="px-2 py-0.5 rounded-full bg-green-50 text-green-600 text-[11px] font-medium">O&apos;qilgan</span>
                     ) : (
                       <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 text-[11px] font-medium">Yangi</span>
                     )}

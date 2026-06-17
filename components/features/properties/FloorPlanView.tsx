@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, X } from 'lucide-react'
-import type { FloorPlan } from '@/lib/types'
+import type { FloorPlan } from '@/types'
 
 interface FloorPlanViewProps {
   plan: FloorPlan

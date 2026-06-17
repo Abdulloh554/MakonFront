@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { motion } from 'framer-motion'
 import FormField from '@/components/ui/FormField'
 import { Map, Upload, X } from 'lucide-react'
 
-const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false })
+const MapPicker = dynamic(() => import('@/components/features/map/MapPicker'), { ssr: false })
 
 const propertyTypes = [
   { value: 'apartment', label: 'Kvartira' },
@@ -68,6 +68,16 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
   const [fileErrors, setFileErrors] = useState<string[]>([])
   const [errors, setErrors] = useState<Partial<Record<keyof PropertyFormData, string>>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const objectUrls = useMemo(
+    () => form.imageFiles.map((f) => URL.createObjectURL(f)),
+    [form.imageFiles],
+  )
+
+  useEffect(() => {
+    return () => {
+      objectUrls.forEach((u) => URL.revokeObjectURL(u))
+    }
+  }, [objectUrls])
 
   function update<K extends keyof PropertyFormData>(key: K, value: PropertyFormData[K]) {
     setForm(prev => ({ ...prev, [key]: value }))
@@ -241,7 +251,7 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
                   }}
                 />
                 <Upload className="w-5 h-5 text-gray-400" />
-                <span className="text-sm text-gray-500">Rasm qo'shish</span>
+                <span className="text-sm text-gray-500">Rasm qo&apos;shish</span>
               </label>
               {fileErrors.length > 0 && (
                 <div className="text-xs text-red-500 space-y-0.5">
@@ -253,7 +263,7 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
                   {form.imageFiles.map((file, i) => (
                     <div key={i} className="relative group">
                       <img
-                        src={URL.createObjectURL(file)}
+                        src={objectUrls[i] || ''}
                         alt=""
                         className="w-full h-24 object-cover rounded-lg"
                       />

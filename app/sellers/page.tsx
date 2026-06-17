@@ -1,13 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, startTransition } from 'react'
 import { Users, Store, ChevronRight, Star, Phone, MessageCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
-import PageTransition from '@/components/PageTransition'
+import PageTransition from '@/components/layout/PageTransition'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
-import { syncSellers, getSellers, useHydrated } from '@/lib/store'
-import type { Seller } from '@/lib/types'
+import { syncSellers, getSellers } from '@/store'
+import { useHydrated } from '@/hooks/useHydrated'
+import type { Seller } from '@/types'
 import { useRouter } from 'next/navigation'
 
 export default function SellersPage() {
@@ -16,13 +17,9 @@ export default function SellersPage() {
   const [sellers, setSellers] = useState<Seller[]>([])
 
   useEffect(() => {
-    syncSellers().then(() => {
-      setSellers(getSellers())
-    })
-  }, [])
-
-  useEffect(() => {
-    if (hydrated) setSellers(getSellers())
+    if (!hydrated) return
+    startTransition(() => setSellers(getSellers()))
+    syncSellers().then(() => startTransition(() => setSellers(getSellers())))
   }, [hydrated])
 
   if (!hydrated) {

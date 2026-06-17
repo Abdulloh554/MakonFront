@@ -1,8 +1,8 @@
 'use client'
 
-import type { Property } from '@/lib/types'
+import type { Property } from '@/types'
 import { MapPin, Maximize, BedDouble, Building2 } from 'lucide-react'
-import { PROPERTY_TYPE_LABELS, DEAL_TYPE_LABELS, STATUS_LABELS } from '@/lib/types'
+import { PROPERTY_TYPE_LABELS, DEAL_TYPE_LABELS, STATUS_LABELS } from '@/constants'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 

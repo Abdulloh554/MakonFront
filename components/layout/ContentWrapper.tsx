@@ -1,7 +1,8 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { getCurrentUser, useHydrated } from '@/lib/store'
+import { getCurrentUser } from '@/store'
+import { useHydrated } from '@/hooks/useHydrated'
 
 export default function ContentWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()

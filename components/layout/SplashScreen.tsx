@@ -1,29 +1,25 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, startTransition } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function SplashScreen({ children }: { children: React.ReactNode }) {
   const [show, setShow] = useState(true)
-  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
     const seen = sessionStorage.getItem('makon_splash_seen')
     if (seen) {
-      setShow(false)
+      startTransition(() => setShow(false))
       return
     }
     const timer = setTimeout(() => {
-      setShow(false)
-      sessionStorage.setItem('makon_splash_seen', '1')
+      startTransition(() => {
+        setShow(false)
+        sessionStorage.setItem('makon_splash_seen', '1')
+      })
     }, 3200)
     return () => clearTimeout(timer)
   }, [])
-
-  if (!mounted) {
-    return <>{children}</>
-  }
 
   return (
     <>

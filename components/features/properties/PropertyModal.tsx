@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import {
   X,
   MapPin,
@@ -17,15 +17,15 @@ import {
   Building2,
   Eye,
 } from "lucide-react";
-import type { Property } from "@/lib/types";
+import type { Property } from "@/types";
 import {
   PROPERTY_TYPE_LABELS,
   DEAL_TYPE_LABELS,
   STATUS_LABELS,
-} from "@/lib/types";
-import { getSeller } from "@/lib/store";
+} from "@/constants";
+import { getSeller } from "@/store";
 import { useToast } from "@/components/ui/ToastProvider";
-import FloorPlanView from "@/components/FloorPlanView";
+import FloorPlanView from "./FloorPlanView";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 

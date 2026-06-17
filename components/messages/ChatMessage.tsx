@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Edit3, MoreHorizontal, Trash2 } from "lucide-react";
-import type { Message } from "@/lib/types";
+import type { Message } from "@/types";
 
 interface ChatMessageProps {
   message: Message;

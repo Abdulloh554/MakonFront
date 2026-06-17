@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, startTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Trash2, ChevronLeft, ChevronRight, Search, Shield, User } from 'lucide-react'
-import { apiAdminUsers, apiAdminDeleteUser, isAdminLoggedIn } from '@/lib/admin'
+import { apiAdminUsers, apiAdminDeleteUser, isAdminLoggedIn } from '@/services/admin'
 
 export default function AdminUsers() {
   const router = useRouter()
@@ -14,12 +14,7 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
-  useEffect(() => {
-    if (!isAdminLoggedIn()) { router.replace('/admin'); return }
-    load()
-  }, [page])
-
-  async function load() {
+  const load = async () => {
     setLoading(true)
     try {
       const res = await apiAdminUsers(page, 20)
@@ -29,6 +24,11 @@ export default function AdminUsers() {
     } catch { router.replace('/admin') }
     setLoading(false)
   }
+
+  useEffect(() => {
+    if (!isAdminLoggedIn()) { router.replace('/admin'); return }
+    startTransition(() => load())
+  }, [page])
 
   async function handleDelete(id: string, name: string) {
     if (!confirm(`${name} — foydalanuvchini o'chirishni tasdiqlaysizmi?`)) return
@@ -68,7 +68,7 @@ export default function AdminUsers() {
                 <th className="px-4 py-3">Ism</th>
                 <th className="px-4 py-3">Telefon</th>
                 <th className="px-4 py-3">Rol</th>
-                <th className="px-4 py-3">Ro'yxatdan o'tgan</th>
+                <th className="px-4 py-3">Ro&apos;yxatdan o&apos;tgan</th>
                 <th className="px-4 py-3 text-right">Amal</th>
               </tr>
             </thead>
