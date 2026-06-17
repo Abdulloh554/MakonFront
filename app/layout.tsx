@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import ContentWrapper from "@/components/ContentWrapper";
 import ToastProvider from "@/components/ui/ToastProvider";
 import StoreInit from "@/components/StoreInit";
 import SplashScreen from "@/components/SplashScreen";
@@ -43,19 +44,9 @@ export default function RootLayout({
         <StoreInit />
         <SplashScreen>
           <Navbar />
-          <main
-            className="min-h-dvh flex flex-col w-full lg:pl-20 xl:pl-24"
-          >
-            <div
-              className="flex-1 flex flex-col w-full max-w-7xl mx-auto overflow-hidden"
-              style={{
-                background: "white",
-                boxShadow: "0 0 0 1px rgba(226,232,240,0.6), 0 4px 32px rgba(15,23,42,0.06)",
-              }}
-            >
-              {children}
-            </div>
-          </main>
+          <ContentWrapper>
+            {children}
+          </ContentWrapper>
         </SplashScreen>
         </ToastProvider>
       </body>

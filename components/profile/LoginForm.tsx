@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { UserIcon } from "lucide-react";
+import { UserIcon, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { login } from "@/lib/store";
 import type { User } from "@/lib/types";
@@ -12,15 +12,20 @@ import {
 } from "@/lib/phone";
 
 interface LoginFormProps {
-  onLogin: (name: string, phone: string) => void;
-  onRegister: (name: string, phone: string) => Promise<User>;
-  sellerOnly?: boolean;
+  onLogin: (name: string, lastName: string, phone: string, password: string) => Promise<User>;
+  onRegister: (name: string, lastName: string, phone: string, password: string) => Promise<User>;
 }
 
-export default function LoginForm({ onLogin, onRegister, sellerOnly = false }: LoginFormProps) {
-  const [mode, setMode] = useState<"login" | "register">(sellerOnly ? "register" : "login");
+export default function LoginForm({ onLogin, onRegister }: LoginFormProps) {
+  const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -43,36 +48,79 @@ export default function LoginForm({ onLogin, onRegister, sellerOnly = false }: L
 
   async function handleSubmit() {
     setError("");
-    const normalized = normalizePhone(phone);
-    if (!normalized) return;
-    if (!isValidUzbekPhone(normalized)) {
-      setError("Noto'g'ri O'zbekiston telefon raqami");
-      return;
-    }
 
     if (mode === "login") {
+      const normalized = normalizePhone(phone);
+      if (!normalized) {
+        setError("Telefon raqamingizni kiriting");
+        return;
+      }
+      if (!isValidUzbekPhone(normalized)) {
+        setError("Noto'g'ri O'zbekiston telefon raqami");
+        return;
+      }
+      if (!password) {
+        setError("Parolni kiriting");
+        return;
+      }
       setLoading(true);
       try {
-        const result = await login(normalized);
-        onLogin(result.name, result.phone);
+        await onLogin("", "", normalized, password);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Kirish xatosi");
       } finally {
         setLoading(false);
       }
-    } else {
-      if (!name.trim()) {
-        setError("Ismingizni kiriting");
-        return;
-      }
-      setLoading(true);
-      try {
-        await onRegister(name.trim(), normalized);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Ro'yxatdan o'tishda xatolik")
-      } finally {
-        setLoading(false);
-      }
+      return;
+    }
+
+    if (!name.trim()) {
+      setError("Ismingizni kiriting");
+      return;
+    }
+
+    if (!lastName.trim()) {
+      setError("Familiyangizni kiriting");
+      return;
+    }
+
+    const normalized = normalizePhone(phone);
+    if (!normalized) {
+      setError("Telefon raqamingizni kiriting");
+      return;
+    }
+    if (!isValidUzbekPhone(normalized)) {
+      setError("Noto'g'ri O'zbekiston telefon raqami");
+      return;
+    }
+
+    if (!password) {
+      setError("Parolni kiriting");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Parol kamida 8 belgidan iborat bo'lishi kerak");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Parollar mos kelmadi");
+      return;
+    }
+
+    if (!agreeToTerms) {
+      setError("Tizim qoidalariga rozilik bildirishingiz kerak");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await onRegister(name.trim(), lastName.trim(), normalized, password);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Ro'yxatdan o'tishda xatolik")
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -89,32 +137,20 @@ export default function LoginForm({ onLogin, onRegister, sellerOnly = false }: L
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 300, damping: 15 }}
-            className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg ${
-              sellerOnly
-                ? "bg-gradient-to-br from-amber-500 to-orange-600 shadow-amber-200"
-                : "bg-gradient-to-br from-blue-500 to-indigo-600 shadow-blue-200"
-            }`}
+            className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-200"
           >
-            {sellerOnly ? (
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m0 0l8 4m-8-4v10l8 4m0-10l8 4m-8-4v10" />
-              </svg>
-            ) : (
-              <UserIcon className="w-8 h-8 text-white" />
-            )}
+            <UserIcon className="w-8 h-8 text-white" />
           </motion.div>
           <h1 className="text-xl font-bold text-gray-900">
-            {mode === "login" ? "Tizimga kirish" : sellerOnly ? "Sotuvchi sifatida ro'yxatdan o'tish" : "Ro'yxatdan o'tish"}
+            {mode === "login" ? "Tizimga kirish" : "Ro'yxatdan o'tish"}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
             {mode === "login"
               ? "Akkountingizga kiring"
-              : sellerOnly ? "Elonlar joylashtirish uchun"
               : "Yangi akkount yarating"}
           </p>
         </div>
 
-        {!sellerOnly && (
         <div className="flex bg-gray-100 rounded-xl p-1">
           <button
             type="button"
@@ -145,30 +181,29 @@ export default function LoginForm({ onLogin, onRegister, sellerOnly = false }: L
             Ro&apos;yxatdan o&apos;tish
           </button>
         </div>
-        )}
 
         <div className="space-y-3">
-          <AnimatePresence>
-            {mode === "register" && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
-              >
-                <label className="text-xs font-medium text-gray-500 mb-1 block">
-                  Ismingiz
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ismingiz"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">
+            Ismingiz
+          </label>
+          <input
+            type="text"
+            placeholder="Ismingiz"
+            value={name}
+            onChange={(e) => { setName(e.target.value); setError(""); }}
+            className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
+          />
+
+          <label className="text-xs font-medium text-gray-500 mb-1 block">
+            Familiyangiz
+          </label>
+          <input
+            type="text"
+            placeholder="Familiyangiz"
+            value={lastName}
+            onChange={(e) => { setLastName(e.target.value); setError(""); }}
+            className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
+          />
 
           <label className="text-xs font-medium text-gray-500 mb-1 block">
             Telefon raqamingiz
@@ -186,18 +221,68 @@ export default function LoginForm({ onLogin, onRegister, sellerOnly = false }: L
             />
           </div>
 
+          <label className="text-xs font-medium text-gray-500 mb-1 block">
+            Parol
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder={mode === "register" ? "Kamida 8 belgi" : "Parolingiz"}
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setError(""); }}
+              className="w-full px-4 py-2.5 pr-10 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+
           <AnimatePresence>
-            {mode === "register" && sellerOnly && (
+            {mode === "register" && (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-                className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-xl p-3 text-center"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
               >
-                Siz sotuvchi sifatida ro'yxatdan o'tyapsiz
+                <label className="text-xs font-medium text-gray-500 mb-1 block">
+                  Parolni tasdiqlang
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Parolni qayta kiriting"
+                    value={confirmPassword}
+                    onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }}
+                    className="w-full px-4 py-2.5 pr-10 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
+
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={agreeToTerms}
+              onChange={(e) => { setAgreeToTerms(e.target.checked); setError(""); }}
+              className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-xs text-gray-500">
+              Tizim qoidalariga roziman
+            </span>
+          </label>
 
           {error && <p className="text-sm text-red-500 text-center">{error}</p>}
 
@@ -206,7 +291,10 @@ export default function LoginForm({ onLogin, onRegister, sellerOnly = false }: L
             whileTap={{ scale: 0.98 }}
             onClick={handleSubmit}
             disabled={
-              loading || !normalizePhone(phone) || (mode === "register" && !name.trim())
+              loading ||
+              !normalizePhone(phone) ||
+              !password ||
+              (mode === "register" && (!name.trim() || !lastName.trim() || !confirmPassword || !agreeToTerms))
             }
             className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-sm hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all shadow-lg shadow-blue-200 flex items-center justify-center"
           >
@@ -226,4 +314,3 @@ export default function LoginForm({ onLogin, onRegister, sellerOnly = false }: L
     </div>
   );
 }
-

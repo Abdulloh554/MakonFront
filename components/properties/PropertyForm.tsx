@@ -66,14 +66,26 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
   const [form, setForm] = useState<PropertyFormData>({ ...defaultData, ...initialData })
   const [showMapPicker, setShowMapPicker] = useState(false)
   const [fileErrors, setFileErrors] = useState<string[]>([])
+  const [errors, setErrors] = useState<Partial<Record<keyof PropertyFormData, string>>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   function update<K extends keyof PropertyFormData>(key: K, value: PropertyFormData[K]) {
     setForm(prev => ({ ...prev, [key]: value }))
+    if (errors[key]) setErrors(prev => ({ ...prev, [key]: undefined }))
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    const newErrors: Partial<Record<keyof PropertyFormData, string>> = {}
+    if (!form.title.trim()) newErrors.title = 'Sarlavha majburiy'
+    if (!form.description.trim()) newErrors.description = 'Tavsif majburiy'
+    else if (form.description.trim().length < 10) newErrors.description = 'Tavsif kamida 10 ta belgidan iborat bo\'lishi kerak'
+    if (form.price <= 0) newErrors.price = 'Narx musbat son bo\'lishi kerak'
+    if (!form.address.trim()) newErrors.address = 'Manzil majburiy'
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
     onSubmit(form)
   }
 
@@ -91,30 +103,33 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Asosiy ma&apos;lumotlar</h2>
 
           <FormField label="Sarlavha" delay={0.05}>
-            <input
-              type="text" required value={form.title}
-              onChange={(e) => update('title', e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
-              placeholder="Masalan: 3 xonali kvartira"
-            />
+              <input
+                type="text" value={form.title}
+                onChange={(e) => update('title', e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
+                placeholder="Masalan: 3 xonali kvartira"
+              />
+            {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
           </FormField>
 
           <FormField label="Tavsif" delay={0.08}>
             <textarea
-              required value={form.description}
+              value={form.description}
               onChange={(e) => update('description', e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none min-h-[100px] resize-none"
-              placeholder="Batafsil ma'lumot"
+              placeholder="Batafsil ma'lumot (kamida 10 belgi)"
             />
+            {errors.description && <p className="text-xs text-red-500 mt-1">{errors.description}</p>}
           </FormField>
 
           <FormField label="Narx ($)" delay={0.1}>
             <input
-              type="number" required min={0} value={form.price}
+              type="number" value={form.price}
               onChange={(e) => update('price', Number(e.target.value))}
               className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
               placeholder="0"
             />
+            {errors.price && <p className="text-xs text-red-500 mt-1">{errors.price}</p>}
           </FormField>
         </motion.div>
 
@@ -264,12 +279,12 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
           </FormField>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <FormField label="Maydon (m²)" delay={0.2}>
-              <input
-                type="number" required min={1} value={form.area}
-                onChange={(e) => update('area', Number(e.target.value))}
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
-              />
+          <FormField label="Maydon (m²)" delay={0.2}>
+            <input
+              type="number" value={form.area}
+              onChange={(e) => update('area', Number(e.target.value))}
+              className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
+            />
             </FormField>
             <FormField label="Xonalar" delay={0.22}>
               <input
@@ -308,12 +323,15 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
 
           <FormField label="Manzil" delay={0.24}>
             <div className="flex gap-2">
+              <div className="flex-1">
               <input
-                type="text" required value={form.address}
+                type="text" value={form.address}
                 onChange={(e) => update('address', e.target.value)}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
+                className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
                 placeholder="Toshkent, Chilonzor tumani"
               />
+              {errors.address && <p className="text-xs text-red-500 mt-1">{errors.address}</p>}
+              </div>
               <button
                 type="button"
                 onClick={async () => {

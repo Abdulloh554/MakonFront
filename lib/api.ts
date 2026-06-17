@@ -3,11 +3,12 @@ import type {
   Seller,
   User,
   Message,
+  Review,
   FloorPlan,
   FilterOptions,
 } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
+const API_BASE = "/api";
 
 // ─── Token management ───────────────────────────────────────────────
 const TOKEN_KEY = "makon_jwt_token";
@@ -48,15 +49,19 @@ async function request<T>(
   });
 
   if (!res.ok) {
-    // If 401, clear the invalid token
     if (res.status === 401) {
       clearToken();
     }
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `API error: ${res.status}`);
+    const body = await res.json().catch(() => ({ error: { message: res.statusText } }));
+    const errMessage = body?.error?.message || body?.error || body?.message || `API error: ${res.status}`;
+    throw new Error(errMessage);
   }
 
-  return res.json();
+  const json = await res.json();
+  if (typeof json === "object" && json !== null && json.success === true) {
+    return json.data as T;
+  }
+  return json as T;
 }
 
 // ─── Mappers ────────────────────────────────────────────────────────
@@ -132,19 +137,19 @@ interface AuthResponse {
   user: Record<string, unknown>;
 }
 
-export async function apiLogin(phone: string): Promise<{ token: string; user: User }> {
+export async function apiLogin(phone: string, password: string): Promise<{ token: string; user: User }> {
   const data = await request<AuthResponse>(
     "/auth/login",
-    { method: "POST", body: JSON.stringify({ phone }), skipAuth: true },
+    { method: "POST", body: JSON.stringify({ phone, password }), skipAuth: true },
   );
   setToken(data.token);
   return { token: data.token, user: mapUser(data.user) };
 }
 
-export async function apiRegister(name: string, phone: string): Promise<{ token: string; user: User }> {
+export async function apiRegister(firstName: string, lastName: string, phone: string, password: string): Promise<{ token: string; user: User }> {
   const data = await request<AuthResponse>(
     "/auth/register",
-    { method: "POST", body: JSON.stringify({ name, phone }), skipAuth: true },
+    { method: "POST", body: JSON.stringify({ firstName, lastName, phone, password }), skipAuth: true },
   );
   setToken(data.token);
   return { token: data.token, user: mapUser(data.user) };
@@ -169,14 +174,14 @@ export async function apiFetchProperties(
     if (filters.maxPrice !== undefined) params.set("maxPrice", String(filters.maxPrice));
   }
   const qs = params.toString();
-  const res = await request<{ data?: Record<string, unknown>[] }>(
+  const data = await request<Record<string, unknown>[]>(
     `/properties${qs ? `?${qs}` : ""}`,
     { skipAuth: true },
   );
-  if (!Array.isArray(res.data)) {
+  if (!Array.isArray(data)) {
     throw new Error("API returned invalid properties data");
   }
-  return res.data.map(mapProperty);
+  return data.map(mapProperty);
 }
 
 export async function apiFetchProperty(id: string): Promise<Property> {
@@ -211,6 +216,41 @@ export async function apiFetchSellerProperties(sellerId: string): Promise<Proper
     { skipAuth: true },
   );
   return data.map(mapProperty);
+}
+
+function mapReview(r: Record<string, unknown>): Review {
+  return {
+    id: toId((r.id ?? r._id) as string | { id?: string; _id?: string } | null | undefined),
+    sellerId: toId(r.sellerId as string | { id?: string; _id?: string } | null | undefined),
+    userId: toId(r.userId as string | { id?: string; _id?: string } | null | undefined),
+    userName: r.userName as string,
+    rating: (r.rating as number) ?? 0,
+    text: r.text as string,
+    createdAt: r.createdAt as string,
+  };
+}
+
+// ─── Reviews API ────────────────────────────────────────────────────
+export async function apiFetchReviewsBySeller(sellerId: string): Promise<Review[]> {
+  const data = await request<Record<string, unknown>[]>(
+    `/reviews/seller/${sellerId}`,
+    { skipAuth: true },
+  );
+  return data.map(mapReview);
+}
+
+export async function apiCreateReview(data: {
+  sellerId: string;
+  userId: string;
+  userName: string;
+  rating: number;
+  text: string;
+}): Promise<Review> {
+  const res = await request<Record<string, unknown>>("/reviews", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return mapReview(res);
 }
 
 // ─── Messages API ───────────────────────────────────────────────────

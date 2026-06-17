@@ -1,6 +1,6 @@
 'use client'
 
-import type { Property, Seller, User, Message, FilterOptions } from './types'
+import type { Property, Seller, User, Message, Review, FilterOptions } from './types'
 import { useEffect, useState } from 'react'
 import {
   apiLogin,
@@ -10,6 +10,8 @@ import {
   apiFetchSeller,
   apiFetchSellerProperties,
   apiCreateProperty,
+  apiFetchReviewsBySeller,
+  apiCreateReview,
   apiSendMessage,
   apiFetchMe,
   clearToken,
@@ -30,6 +32,7 @@ const STORAGE_KEYS = {
   sellers: 'makon_sellers',
   currentUser: 'makon_current_user',
   messages: 'makon_messages',
+  reviews: 'makon_reviews',
 } as const
 
 function generateId(): string {
@@ -66,11 +69,11 @@ function setData<T>(key: string, data: T): void {
 }
 
 // ─── Auth ───────────────────────────────────────────────────────────
-export async function login(phone: string): Promise<User> {
+export async function login(phone: string, password: string): Promise<User> {
   const normalized = normalizePhone(phone)
 
   try {
-    const { user } = await apiLogin(normalized)
+    const { user } = await apiLogin(normalized, password)
     setData(STORAGE_KEYS.currentUser, user)
     return user
   } catch (err) {
@@ -78,13 +81,13 @@ export async function login(phone: string): Promise<User> {
   }
 }
 
-export async function register(name: string, phone: string): Promise<User> {
+export async function register(firstName: string, lastName: string, phone: string, password: string): Promise<User> {
   const normalized = normalizePhone(phone)
   if (!isValidUzbekPhone(normalized)) {
     throw new Error("Noto'g'ri O'zbekiston telefon raqami")
   }
 
-  const { user } = await apiRegister(name, normalized)
+  const { user } = await apiRegister(firstName, lastName, normalized, password)
   setData(STORAGE_KEYS.currentUser, user)
   return user
 }
@@ -244,6 +247,37 @@ export async function fetchSellerProperties(sellerId: string): Promise<Property[
 
 export function getPropertiesBySeller(sellerId: string): Property[] {
   return getProperties().filter((p) => p.sellerId === sellerId)
+}
+
+// ─── Reviews ────────────────────────────────────────────────────────
+export async function fetchReviewsBySeller(sellerId: string): Promise<Review[]> {
+  try {
+    const reviews = await apiFetchReviewsBySeller(sellerId)
+    const all = getData<Review[]>(STORAGE_KEYS.reviews, [])
+    const filtered = all.filter((r) => r.sellerId !== sellerId)
+    setData(STORAGE_KEYS.reviews, [...filtered, ...reviews])
+    return reviews
+  } catch {
+    return getData<Review[]>(STORAGE_KEYS.reviews, []).filter((r) => r.sellerId === sellerId)
+  }
+}
+
+export function getReviewsBySeller(sellerId: string): Review[] {
+  return getData<Review[]>(STORAGE_KEYS.reviews, []).filter((r) => r.sellerId === sellerId)
+}
+
+export async function addReview(data: {
+  sellerId: string
+  userId: string
+  userName: string
+  rating: number
+  text: string
+}): Promise<Review> {
+  const review = await apiCreateReview(data)
+  const all = getData<Review[]>(STORAGE_KEYS.reviews, [])
+  all.unshift(review)
+  setData(STORAGE_KEYS.reviews, all)
+  return review
 }
 
 // ─── Messages ───────────────────────────────────────────────────────

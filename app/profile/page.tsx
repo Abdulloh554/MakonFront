@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getCurrentUser, register, logout, getPropertiesBySeller, useHydrated, syncProperties } from '@/lib/store'
+import { getCurrentUser, login, register, logout, getPropertiesBySeller, useHydrated, syncProperties } from '@/lib/store'
 import PropertyCard from '@/components/PropertyCard'
 import PropertyModal from '@/components/PropertyModal'
 import PageTransition from '@/components/PageTransition'
@@ -10,7 +10,7 @@ import LoginForm from '@/components/profile/LoginForm'
 import ProfileHeader from '@/components/profile/ProfileHeader'
 import EmptyState from '@/components/ui/EmptyState'
 import type { User, Property } from '@/lib/types'
-import { Home, Plus, Store } from 'lucide-react'
+import { Home, Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 
@@ -28,7 +28,6 @@ export default function ProfilePage() {
     if (hydrated) return !getCurrentUser()
     return true
   })
-  const [sellerMode, setSellerMode] = useState(false)
 
   useEffect(() => {
     const u = getCurrentUser()
@@ -37,17 +36,17 @@ export default function ProfilePage() {
   }, [hydrated])
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
 
-  function handleLogin() {
+  async function handleLogin(name: string, lastName: string, phone: string, password: string) {
+    const user = await login(phone, password)
     setUser(getCurrentUser())
     setShowLogin(false)
-    setSellerMode(false)
+    return user
   }
 
-  async function handleRegister(name: string, phone: string) {
-    const user = await register(name, phone)
+  async function handleRegister(name: string, lastName: string, phone: string, password: string) {
+    const user = await register(name, lastName, phone, password)
     setUser(getCurrentUser())
     setShowLogin(false)
-    setSellerMode(false)
     return user
   }
 
@@ -55,53 +54,9 @@ export default function ProfilePage() {
     logout()
     setUser(null)
     setShowLogin(true)
-    setSellerMode(false)
   }
 
   if (showLogin || !user) {
-    if (sellerMode) {
-      return (
-        <PageTransition>
-          <div className="flex-1 flex flex-col items-center justify-center px-4 md:px-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as const }}
-              className="w-full max-w-sm space-y-5"
-            >
-              <div className="text-center">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 15 }}
-                  className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-200"
-                >
-                  <Store className="w-8 h-8 text-white" />
-                </motion.div>
-                <h1 className="text-xl font-bold text-gray-900">Sotuvchi sifatida ro'yxatdan o'tish</h1>
-                <p className="text-sm text-gray-500 mt-1">Elonlaringizni joylashtiring va sotuvni boshlang</p>
-              </div>
-
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setSellerMode(false)}
-                className="w-full py-2.5 rounded-xl bg-gray-100 text-gray-700 font-medium text-sm hover:bg-gray-200 transition-all"
-              >
-                Orqaga qaytish
-              </motion.button>
-
-              <LoginForm 
-                onLogin={handleLogin} 
-                onRegister={handleRegister}
-                sellerOnly={true}
-              />
-            </motion.div>
-          </div>
-        </PageTransition>
-      )
-    }
-
     return (
       <PageTransition>
         <div className="flex-1 flex items-center justify-center px-4 md:px-8">
@@ -112,18 +67,6 @@ export default function ProfilePage() {
             className="w-full max-w-sm space-y-3"
           >
             <LoginForm onLogin={handleLogin} onRegister={handleRegister} />
-
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setSellerMode(true)}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold text-sm hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-200"
-            >
-              <div className="flex items-center justify-center gap-2">
-                <Store className="w-4 h-4" />
-                Sotuvchi sifatida ro'yxatdan o'tish
-              </div>
-            </motion.button>
           </motion.div>
         </div>
       </PageTransition>

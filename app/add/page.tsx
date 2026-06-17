@@ -27,34 +27,39 @@ export default function AddPage() {
   }
 
   async function handleSubmit(form: PropertyFormData) {
-    if (!user) return
+    const currentUser = getCurrentUser()
+    if (!currentUser) {
+      alert('Iltimos, avval tizimga kiring')
+      router.push('/profile')
+      return
+    }
     setSaving(true)
 
-    let { lat, lng } = form
-    if (form.address.trim()) {
-      try {
-        const res = await fetch(
-          'https://nominatim.openstreetmap.org/search?format=json&q=' +
-          encodeURIComponent(form.address + ', Uzbekistan') +
-          '&limit=1'
-        )
-        const data = await res.json()
-        if (data.length > 0) {
-          lat = parseFloat(data[0].lat)
-          lng = parseFloat(data[0].lon)
-        }
-      } catch {}
-    }
-
-    let images: string[]
-    if (form.imageFiles.length > 0) {
-      images = await Promise.all(form.imageFiles.map(fileToBase64))
-    } else {
-      images = ['https://picsum.photos/seed/default/600/400']
-    }
-
     try {
-      addProperty({
+      let { lat, lng } = form
+      if (form.address.trim()) {
+        try {
+          const res = await fetch(
+            'https://nominatim.openstreetmap.org/search?format=json&q=' +
+            encodeURIComponent(form.address + ', Uzbekistan') +
+            '&limit=1'
+          )
+          const data = await res.json()
+          if (data.length > 0) {
+            lat = parseFloat(data[0].lat)
+            lng = parseFloat(data[0].lon)
+          }
+        } catch {}
+      }
+
+      let images: string[]
+      if (form.imageFiles.length > 0) {
+        images = await Promise.all(form.imageFiles.map(fileToBase64))
+      } else {
+        images = ['https://picsum.photos/seed/default/600/400']
+      }
+
+      await addProperty({
         title: form.title,
         description: form.description,
         price: form.price,

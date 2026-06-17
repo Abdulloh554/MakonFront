@@ -17,6 +17,8 @@ const navItems = [
 export default function Navbar() {
   const pathname = usePathname()
 
+  if (pathname.startsWith('/admin')) return null
+
   return (
     <>
       {/* Mobile bottom nav — floating glassmorphism pill */}

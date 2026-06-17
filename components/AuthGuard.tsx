@@ -8,7 +8,7 @@ import {
   isValidUzbekPhone,
   formatLocalPhone,
 } from "@/lib/phone";
-import { LogIn, X, Loader2 } from "lucide-react";
+import { LogIn, X, Loader2, Eye, EyeOff } from "lucide-react";
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -25,7 +25,13 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     setShowLogin(!authed);
   }, []);
   const [name, setName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [mode, setMode] = useState<"login" | "register">("login");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -49,24 +55,54 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
   async function handleSubmit() {
     setError("");
+
+    if (!name.trim()) {
+      setError("Ismingizni kiriting");
+      return;
+    }
+
+    if (!lastName.trim()) {
+      setError("Familiyangizni kiriting");
+      return;
+    }
+
     const normalized = normalizePhone(phone);
-    if (!normalized) return;
+    if (!normalized) {
+      setError("Telefon raqamingizni kiriting");
+      return;
+    }
     if (!isValidUzbekPhone(normalized)) {
       setError("Noto'g'ri O'zbekiston telefon raqami");
+      return;
+    }
+
+    if (!password) {
+      setError("Parolni kiriting");
+      return;
+    }
+
+    if (mode === "register") {
+      if (password.length < 8) {
+        setError("Parol kamida 8 belgidan iborat bo'lishi kerak");
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError("Parollar mos kelmadi");
+        return;
+      }
+    }
+
+    if (!agreeToTerms) {
+      setError("Tizim qoidalariga rozilik bildirishingiz kerak");
       return;
     }
 
     setLoading(true);
     try {
       if (mode === "login") {
-        await login(normalized);
+        await login(normalized, password);
       } else {
-        if (!name.trim()) {
-          setError("Ismingizni kiriting");
-          setLoading(false);
-          return;
-        }
-        await storeRegister(name.trim(), normalized);
+        await storeRegister(name.trim(), lastName.trim(), normalized, password);
       }
 
       setAuth(true);
@@ -143,20 +179,32 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         </p>
 
         <div className="space-y-3">
-          {mode === "register" && (
-            <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">
-                Ismingiz
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ismingizni kiriting"
-                className="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all"
-              />
-            </div>
-          )}
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">
+              Ismingiz
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => { setName(e.target.value); setError(""); }}
+              placeholder="Ismingizni kiriting"
+              className="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">
+              Familiyangiz
+            </label>
+            <input
+              type="text"
+              value={lastName}
+              onChange={(e) => { setLastName(e.target.value); setError(""); }}
+              placeholder="Familiyangizni kiriting"
+              className="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all"
+            />
+          </div>
+
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">
               Telefon
@@ -175,12 +223,76 @@ export default function AuthGuard({ children }: AuthGuardProps) {
             </div>
           </div>
 
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">
+              Parol
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setError(""); }}
+                placeholder={mode === "register" ? "Kamida 8 belgi" : "Parolingiz"}
+                className="w-full px-3 py-2.5 pr-10 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {mode === "register" && (
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">
+                Parolni tasdiqlang
+              </label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }}
+                  placeholder="Parolni qayta kiriting"
+                  className="w-full px-3 py-2.5 pr-10 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={agreeToTerms}
+              onChange={(e) => { setAgreeToTerms(e.target.checked); setError(""); }}
+              className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-xs text-gray-500">
+              Tizim qoidalariga roziman
+            </span>
+          </label>
+
           {error && <p className="text-sm text-red-500 text-center">{error}</p>}
 
           <button
             onClick={handleSubmit}
             disabled={
-              loading || !normalizePhone(phone) || (mode === "register" && !name.trim())
+              loading ||
+              !name.trim() ||
+              !lastName.trim() ||
+              !normalizePhone(phone) ||
+              !password ||
+              (mode === "register" && !confirmPassword) ||
+              !agreeToTerms
             }
             className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl font-semibold text-sm hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 active:scale-[0.98] transition-all shadow-lg shadow-blue-200"
           >
