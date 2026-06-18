@@ -8,8 +8,8 @@ import { apiUploadImage } from '@/services/api'
 import AuthRequired from '@/components/features/auth/AuthRequired'
 import PageTransition from '@/components/layout/PageTransition'
 import PageHeader from '@/components/ui/PageHeader'
-import PropertyForm from '@/components/properties/PropertyForm'
-import type { PropertyFormData } from '@/components/properties/PropertyForm'
+import PropertyForm from '@/components/features/properties/PropertyForm'
+import type { PropertyFormData } from '@/components/features/properties/PropertyForm'
 import type { PropertyType, DealType, PropertyStatus } from '@/types'
 
 export default function AddPage() {

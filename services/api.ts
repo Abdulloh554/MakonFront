@@ -11,14 +11,19 @@ import type {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 function getApiOrigin(): string {
-  if (API_BASE.startsWith("http://") || API_BASE.startsWith("https://")) {
-    return new URL(API_BASE).origin;
+  try {
+    if (API_BASE.startsWith("http://") || API_BASE.startsWith("https://")) {
+      const u = new URL(API_BASE);
+      return u.origin;
+    }
+  } catch {
+    // invalid URL, fall through
   }
   return "";
 }
 
 function resolveImageUrl(url: string): string {
-  if (!url) return "";
+  if (!url || typeof url !== "string") return "";
   if (
     url.startsWith("http://") ||
     url.startsWith("https://") ||
@@ -28,7 +33,8 @@ function resolveImageUrl(url: string): string {
     return url;
   }
   if (url.startsWith("/api/uploads/")) {
-    return `${getApiOrigin()}${url}`;
+    const origin = getApiOrigin();
+    return origin ? `${origin}${url}` : url;
   }
   return url;
 }
@@ -104,7 +110,7 @@ function mapProperty(p: Record<string, unknown>): Property {
     title: p.title as string,
     description: p.description as string,
     price: p.price as number,
-    images: ((p.images as string[]) ?? []).map(resolveImageUrl),
+    images: (Array.isArray(p.images) ? (p.images as string[]) : typeof p.images === 'string' ? [p.images as string] : []).map(resolveImageUrl),
     location: (p.location ?? { lat: 0, lng: 0, address: "" }) as Property["location"],
     type: p.type as Property["type"],
     dealType: p.dealType as Property["dealType"],

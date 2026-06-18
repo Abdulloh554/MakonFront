@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { apiAdminSellers, apiAdminDeleteSeller, isAdminLoggedIn } from '@/services/admin'
 
+
 export default function AdminSellers() {
   const router = useRouter()
   const [sellers, setSellers] = useState<Record<string, unknown>[]>([])
