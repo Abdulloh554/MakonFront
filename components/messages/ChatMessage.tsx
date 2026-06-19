@@ -42,8 +42,11 @@ export default function ChatMessage({
           )}
           <p className="whitespace-pre-wrap break-words">{message.text}</p>
           <p
-            className={`text-[10px] mt-2 ${isOwn ? "text-blue-200" : "text-gray-400"}`}
+            className={`text-[10px] mt-2 flex items-center gap-1 ${isOwn ? "text-blue-200" : "text-gray-400"}`}
           >
+            {message.edited && (
+              <span className="italic opacity-70">tahrirlangan</span>
+            )}
             {new Date(message.createdAt).toLocaleTimeString("uz-UZ", {
               hour: "2-digit",
               minute: "2-digit",

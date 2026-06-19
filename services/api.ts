@@ -33,10 +33,6 @@ function resolveImageUrl(url: string): string {
   ) {
     return url;
   }
-  if (url.startsWith("/api/uploads/")) {
-    const origin = getApiOrigin();
-    return origin ? `${origin}${url}` : url;
-  }
   return url;
 }
 
@@ -339,10 +335,29 @@ export async function apiUnreadCount(): Promise<number> {
   return res.unread;
 }
 
+export async function apiUpdateMessage(
+  messageId: string,
+  text: string,
+): Promise<Message> {
+  const res = await request<Record<string, unknown>>(`/messages/${messageId}`, {
+    method: "PUT",
+    body: JSON.stringify({ text }),
+  });
+  return mapMessage(res);
+}
+
+export async function apiDeleteMessage(
+  messageId: string,
+): Promise<void> {
+  await request(`/messages/${messageId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function apiGoogleLogin(idToken: string): Promise<{ token: string; user: User }> {
-  const data = await request<{ token: string; user: Record<string, unknown> }>(
+  const res = await request<{ token: string; user: Record<string, unknown> }>(
     "/auth/google",
     { method: "POST", body: JSON.stringify({ idToken }), skipAuth: true },
   );
-  return { token: data.token, user: mapUser(data.user) };
+  return { token: res.token, user: mapUser(res.user) };
 }

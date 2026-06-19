@@ -12,6 +12,8 @@ import {
   apiCreateProperty,
   apiFetchReviewsBySeller,
   apiCreateReview,
+  apiUpdateMessage as apiUpdateMessageReq,
+  apiDeleteMessage as apiDeleteMessageReq,
   apiSendMessage,
   apiFetchMe,
   clearToken,
@@ -323,11 +325,17 @@ export function updateMessage(
   const msg = _messages.find((m) => m.id === messageId)
   if (!msg) return null
   msg.text = text
+  msg.edited = true
+  msg.editedAt = new Date().toISOString()
+
+  apiUpdateMessageReq(messageId, text).catch(() => {})
+
   return msg
 }
 
 export function deleteMessage(messageId: string): void {
   _messages = _messages.filter((m) => m.id !== messageId)
+  apiDeleteMessageReq(messageId).catch(() => {})
 }
 
 export function markMessageRead(messageId: string): void {

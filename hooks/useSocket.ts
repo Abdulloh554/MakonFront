@@ -103,6 +103,20 @@ export function useSocket() {
     }
   }, [])
 
+  const onMessageUpdated = useCallback((handler: (message: Message) => void) => {
+    socketRef.current?.on('message_updated', handler)
+    return () => {
+      socketRef.current?.off('message_updated', handler)
+    }
+  }, [])
+
+  const onMessageDeleted = useCallback((handler: (data: { messageId: string }) => void) => {
+    socketRef.current?.on('message_deleted', handler)
+    return () => {
+      socketRef.current?.off('message_deleted', handler)
+    }
+  }, [])
+
   return {
     socket: socketRef,
     connected,
@@ -114,5 +128,7 @@ export function useSocket() {
     emitTypingStop,
     onNewMessage,
     onUnreadCount,
+    onMessageUpdated,
+    onMessageDeleted,
   }
 }

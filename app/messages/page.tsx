@@ -189,6 +189,35 @@ function MessagesContent() {
     return () => unsub();
   }, [conversationPartnerId, user?.id, socket]);
 
+  useEffect(() => {
+    if (!conversationPartnerId) return;
+    const unsub = socket.onMessageUpdated((message: Message) => {
+      if (
+        (message.fromUserId === conversationPartnerId && message.toUserId === user?.id) ||
+        (message.fromUserId === user?.id && message.toUserId === conversationPartnerId)
+      ) {
+        setServerMessages((prev) => {
+          if (!prev) return prev;
+          return prev.map((m) => (m.id === message.id ? message : m));
+        });
+        setMessageVersion((v) => v + 1);
+      }
+    });
+    return () => unsub();
+  }, [conversationPartnerId, user?.id, socket]);
+
+  useEffect(() => {
+    if (!conversationPartnerId) return;
+    const unsub = socket.onMessageDeleted((data: { messageId: string }) => {
+      setServerMessages((prev) => {
+        if (!prev) return prev;
+        return prev.filter((m) => m.id !== data.messageId);
+      });
+      setMessageVersion((v) => v + 1);
+    });
+    return () => unsub();
+  }, [conversationPartnerId, user?.id, socket]);
+
   const partnerTyping = useMemo(() => {
     if (!conversationPartnerId) return false;
     return typingUsers.get(conversationPartnerId) ?? false;
@@ -310,20 +339,20 @@ function MessagesContent() {
     <PageTransition>
       <PageHeader title="Xabarlar" />
 
-      <div className="flex-1 flex min-h-0 overflow-hidden px-4 md:px-6 lg:px-8 pb-6">
-        <div className="flex w-full max-w-5xl mx-auto gap-4 h-full min-h-0">
+      <div className="flex-1 flex min-h-0 overflow-hidden px-4 md:px-6 lg:px-8 pb-4 lg:pb-6">
+        <div className="flex w-full max-w-5xl mx-auto gap-4 min-h-0">
           {showChat && (
             <motion.button
               whileHover={{ x: -2 }}
-              onClick={() => router.push("/messages")}
-              className="md:hidden fixed top-20 left-4 z-10 flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 bg-white/90 rounded-full px-3 py-1.5 shadow-sm border border-gray-200"
+              onClick={() => router.replace("/messages")}
+              className="md:hidden fixed top-4 left-4 z-20 flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 bg-white/95 rounded-full px-3.5 py-2 shadow-md border border-gray-200 backdrop-blur-sm"
             >
               <ArrowLeft className="w-4 h-4" />
               Orqaga
             </motion.button>
           )}
 
-          <div className={`flex-col min-w-0 ${showChat ? "hidden md:flex" : "flex"} w-full md:w-80 lg:w-96 shrink-0 border-r border-gray-200 pr-0 md:pr-4 overflow-y-auto`}>
+          <div className={`flex-col min-h-0 pb-16 md:pb-0 ${showChat ? "hidden md:flex" : "flex"} w-full md:w-80 lg:w-96 shrink-0 border-r border-gray-200 pr-0 md:pr-4 overflow-y-auto`}>
             <div className="pb-2">
               <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-1 mb-2">
                 Barcha xabarlar
@@ -392,9 +421,9 @@ function MessagesContent() {
             </div>
           </div>
 
-          <div className={`flex-col flex-1 min-w-0 ${!showChat ? "hidden md:flex" : "flex"}`}>
+          <div className={`flex-col flex-1 min-h-0 ${!showChat ? "hidden md:flex" : "flex"}`}>
             {showChat ? (
-              <div className="flex flex-col flex-1 min-h-0 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm">
+              <div className="relative flex flex-col flex-1 min-h-0 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm">
                 <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-200">
                   <div className="relative">
                     <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-xs">
@@ -465,7 +494,7 @@ function MessagesContent() {
                   <button
                     type="button"
                     onClick={autoScroll}
-                    className="absolute bottom-24 right-8 z-10 w-9 h-9 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-500 hover:text-gray-700 hover:shadow-lg transition-all"
+                    className="absolute bottom-20 right-8 z-10 w-9 h-9 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-500 hover:text-gray-700 hover:shadow-lg transition-all"
                   >
                     <ChevronDown className="w-5 h-5" />
                   </button>

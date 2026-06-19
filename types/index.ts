@@ -72,6 +72,8 @@ export interface Message {
   text: string
   createdAt: string
   read: boolean
+  edited?: boolean
+  editedAt?: string
 }
 
 export interface FilterOptions {
