@@ -340,7 +340,7 @@ function MessagesContent() {
       <PageHeader title="Xabarlar" />
 
       <div className="flex-1 flex min-h-0 overflow-hidden px-4 md:px-6 lg:px-8 pb-4 lg:pb-6">
-        <div className="flex w-full max-w-5xl mx-auto gap-4 min-h-0">
+        <div className="flex w-full max-w-5xl mx-auto gap-4 flex-1 min-h-0">
           {showChat && (
             <motion.button
               whileHover={{ x: -2 }}
@@ -421,7 +421,7 @@ function MessagesContent() {
             </div>
           </div>
 
-          <div className={`flex-col flex-1 min-h-0 ${!showChat ? "hidden md:flex" : "flex"}`}>
+          <div className={`flex-col flex-1 min-h-0 pb-16 md:pb-0 ${!showChat ? "hidden md:flex" : "flex"}`}>
             {showChat ? (
               <div className="relative flex flex-col flex-1 min-h-0 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm">
                 <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-200">
