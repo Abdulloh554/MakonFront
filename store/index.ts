@@ -82,13 +82,15 @@ export async function register(firstName: string, lastName: string, phone: strin
 export async function restoreSession(): Promise<User | null> {
   const token = getToken()
   if (!token) return null
+
+  const cached = getUserFromStorage()
+  if (cached) return cached
+
   try {
     const user = await apiFetchMe()
     setUserToStorage(user)
     return user
   } catch {
-    clearToken()
-    setUserToStorage(null)
     return null
   }
 }
