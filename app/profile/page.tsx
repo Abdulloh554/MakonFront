@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getCurrentUser, login, register, logout, getPropertiesByUser, syncProperties, syncSellers } from '@/store'
+import { getCurrentUser, login, register, googleLogin, logout, getPropertiesByUser, syncProperties, syncSellers } from '@/store'
 import { useHydrated } from '@/hooks/useHydrated'
 import PropertyCard from '@/components/features/properties/PropertyCard'
 import PropertyModal from '@/components/features/properties/PropertyModal'
@@ -61,6 +61,14 @@ export default function ProfilePage() {
     return user
   }
 
+  async function handleGoogleLogin(idToken: string) {
+    await googleLogin(idToken)
+    const [syncedProps] = await Promise.all([syncProperties(), syncSellers()])
+    setUser(getCurrentUser())
+    setShowLogin(false)
+    setSyncedProperties(syncedProps)
+  }
+
   async function handleRegister(name: string, lastName: string, phone: string, password: string) {
     const user = await register(name, lastName, phone, password)
     const [syncedProps] = await Promise.all([syncProperties(), syncSellers()])
@@ -86,7 +94,7 @@ export default function ProfilePage() {
             transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as const }}
             className="w-full max-w-sm space-y-3"
           >
-            <LoginForm onLogin={handleLogin} onRegister={handleRegister} />
+            <LoginForm onLogin={handleLogin} onRegister={handleRegister} onGoogleLogin={handleGoogleLogin} />
           </motion.div>
         </div>
       </PageTransition>

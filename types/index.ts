@@ -92,3 +92,12 @@ export interface Review {
   text: string
   createdAt: string
 }
+
+export interface Conversation {
+  id: string
+  participantId: string
+  participantName: string
+  lastMessage: string
+  lastMessageAt: string
+  unread: number
+}

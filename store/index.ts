@@ -4,6 +4,7 @@ import type { Property, Seller, User, Message, Review, FilterOptions } from '../
 import {
   apiLogin,
   apiRegister,
+  apiGoogleLogin,
   apiFetchProperties,
   apiFetchSellers,
   apiFetchSeller,
@@ -56,6 +57,12 @@ function setUserToStorage(user: User | null): void {
 export async function login(phone: string, password: string): Promise<User> {
   const normalized = normalizePhone(phone)
   const { user } = await apiLogin(normalized, password)
+  setUserToStorage(user)
+  return user
+}
+
+export async function googleLogin(idToken: string): Promise<User> {
+  const { user } = await apiGoogleLogin(idToken)
   setUserToStorage(user)
   return user
 }

@@ -6,6 +6,7 @@ import type {
   Review,
   FloorPlan,
   FilterOptions,
+  Conversation,
 } from "../types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
@@ -293,6 +294,17 @@ export async function apiCreateReview(data: {
 }
 
 // ─── Messages API ───────────────────────────────────────────────────
+export async function apiFetchConversations(): Promise<Conversation[]> {
+  const data = await request<Record<string, unknown>[]>("/messages/conversations");
+  return data.map((c) => ({
+    id: c.id as string,
+    participantId: c.participantId as string || c.id as string,
+    participantName: c.participantName as string || c.id as string,
+    lastMessage: c.lastMessage as string,
+    lastMessageAt: c.lastMessageAt as string,
+    unread: (c.unread as number) || 0,
+  }));
+}
 export async function apiFetchMessages(conversationId: string): Promise<Message[]> {
   let data: Record<string, unknown>[];
   try {
@@ -325,4 +337,12 @@ export async function apiSendMessage(
 export async function apiUnreadCount(): Promise<number> {
   const res = await request<{ unread: number }>("/messages/unread");
   return res.unread;
+}
+
+export async function apiGoogleLogin(idToken: string): Promise<{ token: string; user: User }> {
+  const data = await request<{ token: string; user: Record<string, unknown> }>(
+    "/auth/google",
+    { method: "POST", body: JSON.stringify({ idToken }), skipAuth: true },
+  );
+  return { token: data.token, user: mapUser(data.user) };
 }

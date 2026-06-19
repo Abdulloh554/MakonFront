@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { UserIcon, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { login } from "@/store";
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import type { User } from "@/types";
 import {
   normalizePhone,
@@ -11,12 +11,15 @@ import {
   formatLocalPhone,
 } from "@/utils/phone";
 
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+
 interface LoginFormProps {
   onLogin: (name: string, lastName: string, phone: string, password: string) => Promise<User>;
   onRegister: (name: string, lastName: string, phone: string, password: string) => Promise<User>;
+  onGoogleLogin?: (idToken: string) => Promise<void>;
 }
 
-export default function LoginForm({ onLogin, onRegister }: LoginFormProps) {
+function LoginFormInner({ onLogin, onRegister, onGoogleLogin }: LoginFormProps) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -182,6 +185,31 @@ export default function LoginForm({ onLogin, onRegister }: LoginFormProps) {
           </button>
         </div>
 
+        {onGoogleLogin && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-gray-400 font-medium">yoki</span>
+              <span className="flex-1 h-px bg-gray-200" />
+            </div>
+            <div className="flex justify-center">
+              <GoogleLogin
+                onSuccess={(credentialResponse) => {
+                  if (credentialResponse.credential) {
+                    onGoogleLogin(credentialResponse.credential)
+                  }
+                }}
+                onError={() => setError("Google orqali kirishda xatolik yuz berdi.")}
+                theme="outline"
+                size="large"
+                text="signin_with"
+                shape="rectangular"
+                width="300"
+              />
+            </div>
+          </div>
+        )}
+
         <div className="space-y-3">
           <label className="text-xs font-medium text-gray-500 mb-1 block">
             Ismingiz
@@ -312,5 +340,13 @@ export default function LoginForm({ onLogin, onRegister }: LoginFormProps) {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginForm(props: LoginFormProps) {
+  return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <LoginFormInner {...props} />
+    </GoogleOAuthProvider>
   );
 }
