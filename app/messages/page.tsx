@@ -169,18 +169,6 @@ function MessagesContent() {
         setServerMessages((prev) => {
           if (!prev) return [message];
           if (prev.some((m) => m.id === message.id)) return prev;
-          const optimisticIdx = prev.findIndex(
-            (m) =>
-              m.fromUserId === message.fromUserId &&
-              m.toUserId === message.toUserId &&
-              m.text === message.text &&
-              m.id !== message.id,
-          );
-          if (optimisticIdx !== -1) {
-            const next = [...prev];
-            next[optimisticIdx] = message;
-            return next;
-          }
           return [...prev, message];
         });
         setMessageVersion((v) => v + 1);
@@ -424,7 +412,7 @@ function MessagesContent() {
           <div className={`flex-col flex-1 min-h-0 pb-16 md:pb-0 ${!showChat ? "hidden md:flex" : "flex"}`}>
             {showChat ? (
               <div className="relative flex flex-col flex-1 min-h-0 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm">
-                <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-200">
+                <div className="shrink-0 flex items-center gap-3 px-5 py-4 border-b border-slate-200">
                   <div className="relative">
                     <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-xs">
                       {partnerName.charAt(0) || "?"}
@@ -500,7 +488,7 @@ function MessagesContent() {
                   </button>
                 )}
 
-                <div className="border-t border-slate-200 p-4">
+                <div className="shrink-0 border-t border-slate-200 p-4">
                   {editingMessageId && (
                     <div className="flex items-center justify-between gap-4 px-2 pb-2 text-xs text-gray-500">
                       <span>Xabarni tahrirlash rejimida</span>
