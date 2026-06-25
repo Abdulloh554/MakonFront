@@ -37,13 +37,17 @@ export default function PropertyCard({ property, onClick }: PropertyCardProps) {
 
   return (
     <motion.div
-      whileHover={{ y: -5, boxShadow: '0 20px 40px rgba(15,23,42,0.12), 0 8px 16px rgba(15,23,42,0.06)' }}
-      whileTap={{ scale: 0.985 }}
+      whileHover={{
+        y: -6,
+        boxShadow: '0 24px 48px rgba(15,23,42,0.14), 0 8px 20px rgba(15,23,42,0.06)',
+        borderColor: 'rgba(24,95,165,0.15)',
+      }}
+      whileTap={{ scale: 0.98 }}
       onClick={onClick}
       className="group bg-white rounded-2xl border overflow-hidden cursor-pointer transition-colors duration-300"
       style={{
-        borderColor: 'rgba(226,232,240,0.8)',
-        boxShadow: '0 2px 8px rgba(15,23,42,0.06)',
+        borderColor: 'rgba(226,232,240,0.7)',
+        boxShadow: '0 2px 8px rgba(15,23,42,0.05)',
       }}
     >
       {/* Image area */}
@@ -53,27 +57,25 @@ export default function PropertyCard({ property, onClick }: PropertyCardProps) {
           alt={property.title}
           className="w-full h-full object-cover"
           style={{ transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)' }}
-          whileHover={{ scale: 1.06 }}
+          whileHover={{ scale: 1.07 }}
           loading="lazy"
           onError={() => setImgErr(true)}
         />
-        {/* Overlay gradients */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: 'linear-gradient(to top, rgba(15,23,42,0.35) 0%, rgba(15,23,42,0.05) 40%, transparent 100%)',
+            background: 'linear-gradient(to top, rgba(15,23,42,0.4) 0%, rgba(15,23,42,0.04) 45%, transparent 100%)',
           }}
         />
         {/* Top badges */}
         <div className="absolute top-3 left-3 flex gap-1.5">
           <span
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur-md"
             style={{
-              background: 'rgba(255,255,255,0.92)',
-              backdropFilter: 'blur(8px)',
+              background: 'rgba(255,255,255,0.88)',
               color: status.color,
-              border: '1px solid rgba(255,255,255,0.7)',
-              boxShadow: '0 2px 8px rgba(15,23,42,0.08)',
+              border: '1px solid rgba(255,255,255,0.6)',
+              boxShadow: '0 2px 8px rgba(15,23,42,0.1)',
             }}
           >
             <span
@@ -85,9 +87,9 @@ export default function PropertyCard({ property, onClick }: PropertyCardProps) {
         </div>
         <div className="absolute top-3 right-3">
           <span
-            className="inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold"
+            className="inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur-md"
             style={{
-              background: deal.bg,
+              background: `${deal.bg}dd`,
               color: deal.text,
               border: `1px solid ${deal.border}`,
               boxShadow: '0 2px 8px rgba(15,23,42,0.06)',
@@ -96,7 +98,7 @@ export default function PropertyCard({ property, onClick }: PropertyCardProps) {
             {DEAL_TYPE_LABELS[property.dealType]}
           </span>
         </div>
-        {/* Bottom price overlay */}
+        {/* Bottom price */}
         <div className="absolute bottom-3 left-3">
           <p
             className="text-lg font-extrabold leading-none"
@@ -105,7 +107,7 @@ export default function PropertyCard({ property, onClick }: PropertyCardProps) {
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
-              filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.4))',
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.35))',
             }}
           >
             {formatPrice(property.price)}
@@ -124,7 +126,6 @@ export default function PropertyCard({ property, onClick }: PropertyCardProps) {
           {property.title}
         </h3>
 
-        {/* Stats row */}
         <div className="flex items-center gap-3 flex-wrap">
           {property.rooms > 0 && (
             <div className="flex items-center gap-1">
@@ -142,10 +143,20 @@ export default function PropertyCard({ property, onClick }: PropertyCardProps) {
           </div>
         </div>
 
-        {/* Address */}
-        <div className="flex items-center gap-1 mt-2">
-          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-          <span className="text-xs text-slate-400 truncate">{property.location.address.split(',')[0]}</span>
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
+          <div className="flex items-center gap-1 min-w-0">
+            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+            <span className="text-[11px] text-slate-400 truncate">{property.location.address.split(',')[0]}</span>
+          </div>
+          <a
+            href="/map"
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold shrink-0 transition-colors"
+            style={{ color: '#185FA5', background: 'rgba(24,95,165,0.06)' }}
+          >
+            <MapPin className="w-2.5 h-2.5" />
+            Xaritada
+          </a>
         </div>
       </div>
     </motion.div>

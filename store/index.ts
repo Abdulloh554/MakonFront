@@ -1,24 +1,8 @@
 'use client'
 
-import type { Property, Seller, User, Message, Review, FilterOptions } from '../types'
-import {
-  apiLogin,
-  apiRegister,
-  apiGoogleLogin,
-  apiFetchProperties,
-  apiFetchSellers,
-  apiFetchSeller,
-  apiFetchSellerProperties,
-  apiCreateProperty,
-  apiFetchReviewsBySeller,
-  apiCreateReview,
-  apiUpdateMessage as apiUpdateMessageReq,
-  apiDeleteMessage as apiDeleteMessageReq,
-  apiSendMessage,
-  apiFetchMe,
-  clearToken,
-  getToken,
-} from '../services/api'
+import type { Property, User, Message } from '../types'
+import type { Seller, Review, FilterOptions } from '../types'
+import { authApi, propertyApi, messageApi, sellerApi } from '../services/api'
 import { normalizePhone, isValidUzbekPhone } from '../utils/phone'
 
 let _properties: Property[] = []
@@ -26,47 +10,33 @@ let _sellers: Seller[] = []
 let _messages: Message[] = []
 let _reviews: Review[] = []
 
-const KEY_CURRENT_USER = 'makon_current_user'
+let _currentUser: User | null = null
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2)
 }
 
-function getUserFromStorage(): User | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const raw = localStorage.getItem(KEY_CURRENT_USER)
-    return raw ? JSON.parse(raw) : null
-  } catch {
-    return null
-  }
-}
-
-function setUserToStorage(user: User | null): void {
-  if (typeof window === 'undefined') return
-  try {
-    if (user) {
-      localStorage.setItem(KEY_CURRENT_USER, JSON.stringify(user))
-    } else {
-      localStorage.removeItem(KEY_CURRENT_USER)
-    }
-  } catch {
-    // ignore
-  }
-}
-
-// ─── Auth ───────────────────────────────────────────────────────────
+// ─── Auth (in-memory only — no localStorage to prevent XSS data leaks) ──
 export async function login(phone: string, password: string): Promise<User> {
   const normalized = normalizePhone(phone)
-  const { user } = await apiLogin(normalized, password)
-  setUserToStorage(user)
+  const { user } = await authApi.login(normalized, password)
+  _currentUser = user
   return user
 }
 
 export async function googleLogin(idToken: string): Promise<User> {
-  const { user } = await apiGoogleLogin(idToken)
-  setUserToStorage(user)
-  return user
+  const response = await fetch('/api/v1/auth/google', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ idToken }),
+  })
+  const body = await response.json()
+  if (!body.success) throw new Error(body.error?.message || 'Google login failed')
+  const { setCsrfToken } = await import('@/services/api')
+  setCsrfToken(body.data.csrfToken)
+  _currentUser = body.data.user
+  return body.data.user
 }
 
 export async function register(firstName: string, lastName: string, phone: string, password: string): Promise<User> {
@@ -74,21 +44,17 @@ export async function register(firstName: string, lastName: string, phone: strin
   if (!isValidUzbekPhone(normalized)) {
     throw new Error("Noto'g'ri O'zbekiston telefon raqami")
   }
-  const { user } = await apiRegister(firstName, lastName, normalized, password)
-  setUserToStorage(user)
+  const { user } = await authApi.register(firstName, lastName, normalized, password)
+  _currentUser = user
   return user
 }
 
 export async function restoreSession(): Promise<User | null> {
-  const token = getToken()
-  if (!token) return null
-
-  const cached = getUserFromStorage()
-  if (cached) return cached
+  if (_currentUser) return _currentUser
 
   try {
-    const user = await apiFetchMe()
-    setUserToStorage(user)
+    const user = await authApi.me()
+    _currentUser = user
     return user
   } catch {
     return null
@@ -96,21 +62,25 @@ export async function restoreSession(): Promise<User | null> {
 }
 
 export function getCurrentUser(): User | null {
-  return getUserFromStorage()
+  return _currentUser
 }
 
-export function logout(): void {
-  clearToken()
-  setUserToStorage(null)
+export async function logout(): Promise<void> {
+  try {
+    await authApi.logout()
+  } catch {
+    // ignore
+  }
+  _currentUser = null
 }
 
 export function isAuthenticated(): boolean {
-  return getCurrentUser() !== null
+  return _currentUser !== null
 }
 
 // ─── Properties ─────────────────────────────────────────────────────
 export async function syncProperties(): Promise<Property[]> {
-  const properties = await apiFetchProperties()
+  const properties = await propertyApi.list()
   _properties = properties
   return properties
 }
@@ -156,7 +126,7 @@ export function getFilteredProperties(filters: FilterOptions, source?: Property[
 }
 
 export async function addProperty(
-  property: Omit<Property, 'id' | 'createdAt' | 'sellerId'>,
+  property: Record<string, unknown>,
 ): Promise<Property> {
   const currentUser = getCurrentUser()
   if (!currentUser) {
@@ -180,34 +150,48 @@ export async function addProperty(
     installmentPrice: property.installmentPrice,
   }
 
-  const created = await apiCreateProperty(body)
+  const created = await propertyApi.create(body as never)
   _properties.unshift(created)
   return created
 }
 
 // ─── Sellers ────────────────────────────────────────────────────────
 export async function syncSellers(): Promise<Seller[]> {
-  const sellers = await apiFetchSellers()
-  _sellers = sellers
-  return sellers
+  const users = await sellerApi.list()
+  _sellers = users.map((u) => ({
+    id: u.id,
+    userId: u.id,
+    name: u.name,
+    phone: u.phone,
+    avatar: u.avatar,
+    rating: 5.0,
+    totalListings: _properties.filter((p) => p.sellerId === u.id).length,
+    joinedAt: u.createdAt,
+  }))
+  return _sellers
 }
 
 export function getSellers(): Seller[] {
-  return _sellers.map((s) => ({
-    ...s,
-    totalListings: _properties.filter((p) => p.sellerId === s.id).length,
-  }))
+  return _sellers
 }
 
 export function getSeller(id: string): Seller | undefined {
-  const s = _sellers.find((s) => s.id === id)
-  if (!s) return undefined
-  return { ...s, totalListings: _properties.filter((p) => p.sellerId === id).length }
+  return _sellers.find((s) => s.id === id)
 }
 
 export async function fetchSeller(id: string): Promise<Seller | undefined> {
   try {
-    return await apiFetchSeller(id)
+    const user = await sellerApi.detail(id)
+    return {
+      id: user.id,
+      userId: user.id,
+      name: user.name,
+      phone: user.phone,
+      avatar: user.avatar,
+      rating: 5.0,
+      totalListings: 0,
+      joinedAt: user.createdAt,
+    }
   } catch {
     return getSeller(id)
   }
@@ -215,7 +199,7 @@ export async function fetchSeller(id: string): Promise<Seller | undefined> {
 
 export async function fetchSellerProperties(sellerId: string): Promise<Property[]> {
   try {
-    return await apiFetchSellerProperties(sellerId)
+    return _properties.filter((p) => p.sellerId === sellerId)
   } catch {
     return _properties.filter((p) => p.sellerId === sellerId)
   }
@@ -241,13 +225,8 @@ export function getPropertiesByUser(user: User, source?: Property[]): Property[]
 
 // ─── Reviews ────────────────────────────────────────────────────────
 export async function fetchReviewsBySeller(sellerId: string): Promise<Review[]> {
-  try {
-    const reviews = await apiFetchReviewsBySeller(sellerId)
-    _reviews = _reviews.filter((r) => r.sellerId !== sellerId).concat(reviews)
-    return reviews
-  } catch {
-    return _reviews.filter((r) => r.sellerId === sellerId)
-  }
+  // Reviews API not implemented yet; return empty
+  return _reviews.filter((r) => r.sellerId === sellerId)
 }
 
 export function getReviewsBySeller(sellerId: string): Review[] {
@@ -261,7 +240,11 @@ export async function addReview(data: {
   rating: number
   text: string
 }): Promise<Review> {
-  const review = await apiCreateReview(data)
+  const review: Review = {
+    id: generateId(),
+    ...data,
+    createdAt: new Date().toISOString(),
+  }
   _reviews.unshift(review)
   return review
 }
@@ -283,35 +266,29 @@ export function sendMessage(
   text: string,
 ): Message {
   const clientId = generateId()
+  const tempId = clientId
   const now = new Date().toISOString()
   const msg: Message = {
     id: clientId,
+    conversationId: tempId,
     fromUserId,
     toUserId,
-    propertyId,
+    propertyId: propertyId || 'general',
     text,
-    createdAt: now,
     read: false,
+    edited: false,
+    createdAt: now,
+    updatedAt: now,
   }
   _messages.push(msg)
 
-  apiSendMessage(toUserId, propertyId || 'general', text)
+  messageApi.send({ toUserId, propertyId: propertyId || 'general', text, tempId })
     .then((serverMsg) => {
       const idx = _messages.findIndex((m) => m.id === clientId)
       if (idx !== -1) {
-        _messages[idx] = serverMsg
-      } else {
-        const contentIdx = _messages.findIndex(
-          (m) =>
-            m.fromUserId === fromUserId &&
-            m.toUserId === toUserId &&
-            m.text === text &&
-            m.createdAt === now,
-        )
-        if (contentIdx !== -1) {
-          _messages[contentIdx] = serverMsg
-        } else {
-          _messages.push(serverMsg)
+        _messages[idx] = {
+          ...serverMsg.message,
+          id: serverMsg.message.id,
         }
       }
     })
@@ -330,14 +307,14 @@ export function updateMessage(
   msg.edited = true
   msg.editedAt = new Date().toISOString()
 
-  apiUpdateMessageReq(messageId, text).catch(() => {})
+  messageApi.update(messageId, text).catch(() => {})
 
   return msg
 }
 
 export function deleteMessage(messageId: string): void {
   _messages = _messages.filter((m) => m.id !== messageId)
-  apiDeleteMessageReq(messageId).catch(() => {})
+  messageApi.delete(messageId).catch(() => {})
 }
 
 export function markMessageRead(messageId: string): void {

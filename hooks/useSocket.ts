@@ -1,124 +1,173 @@
+/**
+ * @file useSocket.ts
+ * @layer Hook
+ * @responsibility ALL Socket.IO logic — connect, events, cleanup. Single source of truth for socket interactions.
+ */
+
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { io, Socket } from 'socket.io-client'
-import { getToken } from '@/services/api'
-import type { Message } from '@/types'
-
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:4000'
+import { connectSocket, disconnectSocket, getSocket } from '@/lib/socket'
+import { SOCKET_EVENTS } from '@shared/constants/events'
+import type { Message } from '@shared/types/message.types'
+import { useAuthStore } from '@/store/auth.store'
 
 interface TypingUser {
   userId: string
-  isTyping: boolean
-}
-
-interface OnlineUser {
-  userId: string
-  online: boolean
+  conversationId: string
 }
 
 export function useSocket() {
-  const socketRef = useRef<Socket | null>(null)
   const [connected, setConnected] = useState(false)
-  const [typingUsers, setTypingUsers] = useState<Map<string, boolean>>(new Map())
+  const [typingUsers, setTypingUsers] = useState<Map<string, Set<string>>>(new Map())
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const listenerCleanups = useRef<Array<() => void>>([])
 
   useEffect(() => {
-    const token = getToken()
-    if (!token) return
-
-    const socket = io(SOCKET_URL, {
-      auth: { token },
-      transports: ['websocket', 'polling'],
-    })
-
-    socketRef.current = socket
-
-    socket.on('connect', () => {
-      setConnected(true)
-    })
-
-    socket.on('disconnect', () => {
+    if (!isAuthenticated) {
+      disconnectSocket()
       setConnected(false)
-    })
+      return
+    }
 
-    socket.on('user:typing', (data: TypingUser) => {
+    const socket = connectSocket()
+
+    const onConnect = () => setConnected(true)
+    const onDisconnect = () => setConnected(false)
+
+    socket.on('connect', onConnect)
+    socket.on('disconnect', onDisconnect)
+
+    socket.on(SOCKET_EVENTS.SERVER.TYPING_START, (data: TypingUser) => {
       setTypingUsers((prev) => {
         const next = new Map(prev)
-        if (data.isTyping) {
-          next.set(data.userId, true)
-        } else {
-          next.delete(data.userId)
-        }
+        const conversationUsers = next.get(data.conversationId) || new Set()
+        conversationUsers.add(data.userId)
+        next.set(data.conversationId, conversationUsers)
         return next
       })
+
+      // Auto-clear typing after 3 seconds
+      setTimeout(() => {
+        setTypingUsers((prev) => {
+          const next = new Map(prev)
+          const conversationUsers = next.get(data.conversationId)
+          if (conversationUsers) {
+            conversationUsers.delete(data.userId)
+            if (conversationUsers.size === 0) {
+              next.delete(data.conversationId)
+            }
+          }
+          return next
+        })
+      }, 3000)
     })
 
-    socket.on('user:online', (data: OnlineUser) => {
+    socket.on(SOCKET_EVENTS.SERVER.USER_ONLINE, (data: { userId: string }) => {
+      setOnlineUsers((prev) => new Set(prev).add(data.userId))
+    })
+
+    socket.on(SOCKET_EVENTS.SERVER.USER_OFFLINE, (data: { userId: string }) => {
       setOnlineUsers((prev) => {
         const next = new Set(prev)
-        if (data.online) {
-          next.add(data.userId)
-        } else {
-          next.delete(data.userId)
+        next.delete(data.userId)
+        return next
+      })
+    })
+
+    socket.on(SOCKET_EVENTS.SERVER.TYPING_STOP, (data: TypingUser) => {
+      setTypingUsers((prev) => {
+        const next = new Map(prev)
+        const conversationUsers = next.get(data.conversationId)
+        if (conversationUsers) {
+          conversationUsers.delete(data.userId)
+          if (conversationUsers.size === 0) {
+            next.delete(data.conversationId)
+          }
         }
         return next
       })
     })
 
     return () => {
-      socket.removeAllListeners()
-      socket.disconnect()
-      socketRef.current = null
+      socket.off('connect', onConnect)
+      socket.off('disconnect', onDisconnect)
+      socket.off(SOCKET_EVENTS.SERVER.USER_ONLINE)
+      socket.off(SOCKET_EVENTS.SERVER.USER_OFFLINE)
+      socket.off(SOCKET_EVENTS.SERVER.TYPING_START)
+      socket.off(SOCKET_EVENTS.SERVER.TYPING_STOP)
+
+      listenerCleanups.current.forEach((cleanup) => cleanup())
+      listenerCleanups.current = []
+
+      disconnectSocket()
+      setConnected(false)
     }
+  }, [isAuthenticated])
+
+  const joinConversation = useCallback((conversationId: string) => {
+    getSocket()?.emit(SOCKET_EVENTS.CLIENT.JOIN_CONVERSATION, { conversationId })
   }, [])
 
-  const joinConversation = useCallback((partnerId: string) => {
-    socketRef.current?.emit('join_conversation', { partnerId })
+  const leaveConversation = useCallback((conversationId: string) => {
+    getSocket()?.emit(SOCKET_EVENTS.CLIENT.LEAVE_CONVERSATION, { conversationId })
   }, [])
 
-  const leaveConversation = useCallback((partnerId: string) => {
-    socketRef.current?.emit('leave_conversation', { partnerId })
+  const emitTypingStart = useCallback((conversationId: string) => {
+    getSocket()?.emit(SOCKET_EVENTS.CLIENT.TYPING_START, { conversationId })
   }, [])
 
-  const emitTypingStart = useCallback((toUserId: string) => {
-    socketRef.current?.emit('typing_start', { toUserId })
+  const emitTypingStop = useCallback((conversationId: string) => {
+    getSocket()?.emit(SOCKET_EVENTS.CLIENT.TYPING_STOP, { conversationId })
   }, [])
 
-  const emitTypingStop = useCallback((toUserId: string) => {
-    socketRef.current?.emit('typing_stop', { toUserId })
+  const markRead = useCallback((conversationId: string, messageIds: string[]) => {
+    getSocket()?.emit(SOCKET_EVENTS.CLIENT.MARK_READ, { conversationId, messageIds })
   }, [])
 
+  // Typed event listeners that return cleanup functions
   const onNewMessage = useCallback((handler: (message: Message) => void) => {
-    socketRef.current?.on('new_message', handler)
-    return () => {
-      socketRef.current?.off('new_message', handler)
-    }
-  }, [])
+    const socket = getSocket()
+    if (!socket) return () => {}
 
-  const onUnreadCount = useCallback((handler: (data: { count: number }) => void) => {
-    socketRef.current?.on('unread_count', handler)
-    return () => {
-      socketRef.current?.off('unread_count', handler)
-    }
+    socket.on(SOCKET_EVENTS.SERVER.MESSAGE_NEW, handler)
+    const cleanup = () => socket.off(SOCKET_EVENTS.SERVER.MESSAGE_NEW, handler)
+    listenerCleanups.current.push(cleanup)
+    return cleanup
   }, [])
 
   const onMessageUpdated = useCallback((handler: (message: Message) => void) => {
-    socketRef.current?.on('message_updated', handler)
-    return () => {
-      socketRef.current?.off('message_updated', handler)
-    }
+    const socket = getSocket()
+    if (!socket) return () => {}
+
+    socket.on(SOCKET_EVENTS.SERVER.MESSAGE_UPDATED, handler)
+    const cleanup = () => socket.off(SOCKET_EVENTS.SERVER.MESSAGE_UPDATED, handler)
+    listenerCleanups.current.push(cleanup)
+    return cleanup
   }, [])
 
   const onMessageDeleted = useCallback((handler: (data: { messageId: string }) => void) => {
-    socketRef.current?.on('message_deleted', handler)
-    return () => {
-      socketRef.current?.off('message_deleted', handler)
-    }
+    const socket = getSocket()
+    if (!socket) return () => {}
+
+    socket.on(SOCKET_EVENTS.SERVER.MESSAGE_DELETED, handler)
+    const cleanup = () => socket.off(SOCKET_EVENTS.SERVER.MESSAGE_DELETED, handler)
+    listenerCleanups.current.push(cleanup)
+    return cleanup
+  }, [])
+
+  const onUnreadCount = useCallback((handler: (data: { count: number }) => void) => {
+    const socket = getSocket()
+    if (!socket) return () => {}
+
+    socket.on(SOCKET_EVENTS.SERVER.UNREAD_COUNT, handler)
+    const cleanup = () => socket.off(SOCKET_EVENTS.SERVER.UNREAD_COUNT, handler)
+    listenerCleanups.current.push(cleanup)
+    return cleanup
   }, [])
 
   return {
-    socket: socketRef,
     connected,
     typingUsers,
     onlineUsers,
@@ -126,9 +175,10 @@ export function useSocket() {
     leaveConversation,
     emitTypingStart,
     emitTypingStop,
+    markRead,
     onNewMessage,
-    onUnreadCount,
     onMessageUpdated,
     onMessageDeleted,
+    onUnreadCount,
   }
 }

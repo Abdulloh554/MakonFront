@@ -20,4 +20,5 @@ export const STATUS_LABELS: Record<PropertyStatus, string> = {
   ready: 'Tayyor uy',
   'half-ready': 'Yarim tayyor',
   land: 'Tekis yer',
+  sold: 'Sotilgan',
 }

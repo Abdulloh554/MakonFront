@@ -12,33 +12,43 @@ interface PageHeaderProps {
 
 export default function PageHeader({ title, icon, subtitle, rightContent, className = '' }: PageHeaderProps) {
   return (
-    <div
-      className={`px-4 md:px-6 lg:px-8 py-3.5 sticky top-0 z-10 ${className}`}
-      style={{
-        background: 'rgba(255,255,255,0.92)',
-        backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-        borderBottom: '1px solid rgba(226,232,240,0.7)',
-      }}
+    <motion.div
+      initial={{ opacity: 0, y: -12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+      className={`sticky top-0 z-20 bg-white/80 backdrop-blur-2xl border-b border-gray-100 px-4 md:px-6 lg:px-8 py-3.5 ${className}`}
     >
       <div className="flex items-center gap-2.5">
         {icon && (
           <motion.div
-            initial={{ rotate: -12, scale: 0.75, opacity: 0 }}
-            animate={{ rotate: 0, scale: 1, opacity: 1 }}
-            transition={{ duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
+            initial={{ scale: 0.6, rotate: -12 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+            className="shrink-0"
           >
             {icon}
           </motion.div>
         )}
-        <motion.h1
-          initial={{ opacity: 0, x: -8 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
-          className="text-lg font-bold text-slate-900 tracking-tight"
-        >
-          {title}
-        </motion.h1>
+        <div className="min-w-0">
+          <motion.h1
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, delay: 0.05 }}
+            className="text-base font-bold text-gray-900"
+          >
+            {title}
+          </motion.h1>
+          {subtitle && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1, duration: 0.3 }}
+              className="text-[10px] text-gray-400 font-medium mt-0.5"
+            >
+              {subtitle}
+            </motion.p>
+          )}
+        </div>
         {rightContent && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -50,20 +60,6 @@ export default function PageHeader({ title, icon, subtitle, rightContent, classN
           </motion.div>
         )}
       </div>
-      {subtitle && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.15, duration: 0.3 }}
-          className="mt-0.5"
-        >
-          {typeof subtitle === 'string' ? (
-            <p className="text-sm text-slate-500">{subtitle}</p>
-          ) : (
-            subtitle
-          )}
-        </motion.div>
-      )}
-    </div>
+    </motion.div>
   )
 }

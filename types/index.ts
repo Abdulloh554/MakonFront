@@ -1,88 +1,93 @@
-export type PropertyType = 'apartment' | 'house' | 'cottage' | 'dacha' | 'commercial' | 'land'
+/**
+ * @file index.ts
+ * @layer Frontend Types
+ * @responsibility Re-exports all shared types for frontend consumption
+ */
 
-export type DealType = 'daily' | 'sale' | 'rent' | 'installment'
+export type {
+  ApiResponse,
+  ApiSuccess,
+  ApiError,
+  ApiErrorBody,
+  ApiErrorDetail,
+  PaginationMeta,
+  ErrorCode,
+} from '@shared/types/api.types'
+export { ERROR_CODES } from '@shared/types/api.types'
 
-export type PropertyStatus = 'ready' | 'half-ready' | 'land'
+export type {
+  User,
+  UserRole,
+  AuthProvider,
+  LoginRequest,
+  RegisterRequest,
+  AuthResponse,
+  RefreshResponse,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
+} from '@shared/types/user.types'
+export { USER_ROLES, AUTH_PROVIDERS } from '@shared/types/user.types'
 
-export interface FloorPlanRoom {
-  id: string
-  name: string
-  image: string
-}
+export type {
+  Property,
+  PropertyType,
+  DealType,
+  PropertyStatus,
+  PropertyLocation,
+  PropertyFilters,
+  CreatePropertyRequest,
+  UpdatePropertyRequest,
+  FloorPlan,
+  FloorPlanFloor,
+  FloorPlanRoom,
+} from '@shared/types/property.types'
+export { PROPERTY_TYPES, DEAL_TYPES, PROPERTY_STATUSES } from '@shared/types/property.types'
 
-export interface FloorPlanFloor {
-  id: string
-  name: string
-  image?: string
-  rooms: FloorPlanRoom[]
-}
+// Re-import locally for the frontend-specific types below
+import type { DealType as _DealType, PropertyType as _PropertyType, PropertyStatus as _PropertyStatus } from '@shared/types/property.types'
 
-export interface FloorPlan {
-  floors: FloorPlanFloor[]
-}
+export type {
+  Message,
+  MessageWithTempId,
+  Conversation,
+  SendMessageRequest,
+  SendMessageResponse,
+  MarkReadRequest,
+} from '@shared/types/message.types'
 
-export interface Property {
-  id: string
-  title: string
-  description: string
-  price: number
-  images: string[]
-  location: {
-    lat: number
-    lng: number
-    address: string
-  }
-  type: PropertyType
-  dealType: DealType
-  status: PropertyStatus
-  sellerId: string
-  createdAt: string
-  rooms: number
-  area: number
-  floor?: number
-  totalFloors?: number
-  installmentMonths?: number
-  installmentPrice?: number
-  floorPlan?: FloorPlan
+export type {
+  Payment,
+  PaymentProvider,
+  PaymentStatus,
+  CreatePaymentRequest,
+  PaymentHistoryResponse,
+} from '@shared/types/payment.types'
+export { PAYMENT_PROVIDERS, PAYMENT_STATUSES } from '@shared/types/payment.types'
+
+export { API_ROUTES } from '@shared/constants/routes'
+export { SOCKET_EVENTS } from '@shared/constants/events'
+export type { ClientSocketEvent, ServerSocketEvent } from '@shared/constants/events'
+
+// ─── Frontend-specific types ─────────────────────────────────────────
+
+export interface FilterOptions {
+  search: string
+  dealType: _DealType | 'all'
+  propertyType: _PropertyType | 'all'
+  status: _PropertyStatus | 'all'
+  minPrice: number | undefined
+  maxPrice: number | undefined
 }
 
 export interface Seller {
   id: string
-  userId?: string
+  userId: string
   name: string
   phone: string
-  avatar: string
+  avatar?: string
   rating: number
   totalListings: number
-}
-
-export interface User {
-  id: string
-  name: string
-  phone: string
-  avatar: string
-  role?: 'seller' | 'buyer'
-}
-
-export interface Message {
-  id: string
-  fromUserId: string
-  toUserId: string
-  propertyId: string
-  text: string
-  createdAt: string
-  read: boolean
-  edited?: boolean
-  editedAt?: string
-}
-
-export interface FilterOptions {
-  dealType: DealType | 'all'
-  propertyType: PropertyType | 'all'
-  status: PropertyStatus | 'all'
-  minPrice?: number
-  maxPrice?: number
-  search: string
+  joinedAt: string
 }
 
 export interface Review {
@@ -93,13 +98,4 @@ export interface Review {
   rating: number
   text: string
   createdAt: string
-}
-
-export interface Conversation {
-  id: string
-  participantId: string
-  participantName: string
-  lastMessage: string
-  lastMessageAt: string
-  unread: number
 }

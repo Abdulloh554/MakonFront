@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { PlusCircle } from 'lucide-react'
 import { getCurrentUser, addProperty } from '@/store'
 import { useHydrated } from '@/hooks/useHydrated'
 import { apiUploadImage } from '@/services/api'
@@ -70,7 +71,7 @@ export default function AddPage() {
         dealType: form.dealType as DealType,
         status: form.status as PropertyStatus,
         images,
-        location: { lat, lng, address: form.address },
+        location: { lat, lng, address: form.address, city: 'Tashkent' },
         area: form.area,
         rooms: form.rooms,
         floor: form.type === 'apartment' || form.type === 'commercial' ? form.floor : undefined,
@@ -94,7 +95,15 @@ export default function AddPage() {
 
   return (
     <PageTransition>
-      <PageHeader title="Elon qo'shish" />
+      <PageHeader
+        title="Elon qo'shish"
+        subtitle="Yangi ko'chmas mulk e'loni"
+        icon={
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center shadow-sm">
+            <PlusCircle className="w-4 h-4 text-white" />
+          </div>
+        }
+      />
       <PropertyForm onSubmit={handleSubmit} saving={saving} />
     </PageTransition>
   )

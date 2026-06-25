@@ -64,36 +64,15 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
 
   return (
     <div className="space-y-2" ref={panelRef}>
-      {/* Search + Filter toggle row */}
       <div className="flex items-center gap-2">
-        {/* Search input */}
         <div className="relative flex-1">
-          <Search
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-            style={{ color: 'var(--gray-400)' }}
-          />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           <input
             type="text"
             placeholder="Qidirish..."
             value={filters.search}
             onChange={(e) => update('search', e.target.value)}
-            className="w-full pl-10 pr-9 py-2.5 text-sm font-medium rounded-xl transition-all duration-200"
-            style={{
-              background: 'var(--gray-100)',
-              border: '1.5px solid transparent',
-              color: 'var(--gray-900)',
-              outline: 'none',
-            }}
-            onFocus={(e) => {
-              e.target.style.background = 'white'
-              e.target.style.borderColor = '#378ADD'
-              e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.12)'
-            }}
-            onBlur={(e) => {
-              e.target.style.background = 'var(--gray-100)'
-              e.target.style.borderColor = 'transparent'
-              e.target.style.boxShadow = 'none'
-            }}
+            className="w-full pl-10 pr-9 py-2.5 text-sm font-medium rounded-xl bg-slate-100 border-2 border-transparent text-slate-900 outline-none transition-all duration-200 focus:bg-white focus:border-blue-400 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.12)] placeholder:text-slate-400"
           />
           <AnimatePresence>
             {filters.search && (
@@ -110,23 +89,14 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
           </AnimatePresence>
         </div>
 
-        {/* Filter button */}
         <motion.button
           whileTap={{ scale: 0.94 }}
           onClick={() => setOpen(!open)}
-          className="relative p-2.5 rounded-xl transition-all duration-200 flex items-center gap-1.5"
-          style={
+          className={`relative p-2.5 rounded-xl transition-all duration-200 flex items-center gap-1.5 ${
             open || hasActiveFilters
-              ? {
-                  background: 'linear-gradient(135deg, #185FA5, #378ADD)',
-                  color: 'white',
-                  boxShadow: '0 4px 12px rgba(24,95,165,0.30)',
-                }
-              : {
-                  background: 'var(--gray-100)',
-                  color: 'var(--gray-500)',
-                }
-          }
+              ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-200'
+              : 'bg-slate-100 text-slate-500'
+          }`}
         >
           <SlidersHorizontal className="w-4 h-4" />
           {hasActiveFilters && (
@@ -139,45 +109,28 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
         </motion.button>
       </div>
 
-      {/* Filter panel */}
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.98 }}
+            initial={{ opacity: 0, y: -6, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            exit={{ opacity: 0, y: -6, scale: 0.97 }}
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-            className="rounded-2xl overflow-hidden"
-            style={{
-              background: 'white',
-              border: '1.5px solid var(--gray-150)',
-              boxShadow: '0 16px 40px rgba(15,23,42,0.10), 0 4px 12px rgba(15,23,42,0.06)',
-            }}
+            className="rounded-2xl overflow-hidden bg-white/95 backdrop-blur-xl border border-slate-200/80 shadow-[0_16px_48px_rgba(15,23,42,0.12),0_4px_12px_rgba(15,23,42,0.06)]"
           >
-            {/* Header */}
-            <div
-              className="flex items-center justify-between px-4 py-3"
-              style={{ borderBottom: '1px solid var(--gray-100)' }}
-            >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
               <span className="text-xs font-bold text-slate-700 uppercase tracking-widest">Filtrlash</span>
               {hasActiveFilters && (
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() =>
                     onChange({
-                      dealType: 'all',
-                      propertyType: 'all',
-                      status: 'all',
-                      minPrice: undefined,
-                      maxPrice: undefined,
+                      dealType: 'all', propertyType: 'all', status: 'all',
+                      minPrice: undefined, maxPrice: undefined,
                       search: filters.search,
                     })
                   }
-                  className="text-xs font-semibold px-3 py-1 rounded-full transition-colors"
-                  style={{
-                    background: 'var(--danger-bg)',
-                    color: 'var(--danger)',
-                  }}
+                  className="text-xs font-semibold px-3 py-1 rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
                 >
                   Tozalash
                 </motion.button>
@@ -185,7 +138,6 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
             </div>
 
             <div className="p-4 space-y-4">
-              {/* Deal type */}
               <div>
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 block">Bitim turi</label>
                 <div className="flex flex-wrap gap-1.5">
@@ -194,19 +146,11 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
                       key={t.value}
                       whileTap={{ scale: 0.93 }}
                       onClick={() => update('dealType', t.value)}
-                      className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200"
-                      style={
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
                         filters.dealType === t.value
-                          ? {
-                              background: 'linear-gradient(135deg, #185FA5, #378ADD)',
-                              color: 'white',
-                              boxShadow: '0 3px 10px rgba(24,95,165,0.25)',
-                            }
-                          : {
-                              background: 'var(--gray-100)',
-                              color: 'var(--gray-600)',
-                            }
-                      }
+                          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md shadow-blue-200'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
                     >
                       {t.label}
                     </motion.button>
@@ -214,7 +158,6 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
                 </div>
               </div>
 
-              {/* Property type */}
               <div>
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 block">Mulk turi</label>
                 <div className="flex flex-wrap gap-1.5">
@@ -223,19 +166,11 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
                       key={t.value}
                       whileTap={{ scale: 0.93 }}
                       onClick={() => update('propertyType', t.value)}
-                      className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200"
-                      style={
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
                         filters.propertyType === t.value
-                          ? {
-                              background: 'linear-gradient(135deg, #185FA5, #378ADD)',
-                              color: 'white',
-                              boxShadow: '0 3px 10px rgba(24,95,165,0.25)',
-                            }
-                          : {
-                              background: 'var(--gray-100)',
-                              color: 'var(--gray-600)',
-                            }
-                      }
+                          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md shadow-blue-200'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
                     >
                       {t.label}
                     </motion.button>
@@ -243,7 +178,6 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
                 </div>
               </div>
 
-              {/* Status */}
               <div>
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 block">Holati</label>
                 <div className="flex flex-wrap gap-1.5">
@@ -252,19 +186,11 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
                       key={t.value}
                       whileTap={{ scale: 0.93 }}
                       onClick={() => update('status', t.value)}
-                      className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200"
-                      style={
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
                         filters.status === t.value
-                          ? {
-                              background: 'linear-gradient(135deg, #185FA5, #378ADD)',
-                              color: 'white',
-                              boxShadow: '0 3px 10px rgba(24,95,165,0.25)',
-                            }
-                          : {
-                              background: 'var(--gray-100)',
-                              color: 'var(--gray-600)',
-                            }
-                      }
+                          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md shadow-blue-200'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
                     >
                       {t.label}
                     </motion.button>
@@ -272,7 +198,6 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
                 </div>
               </div>
 
-              {/* Price range */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Min narx ($)</label>
@@ -281,23 +206,7 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
                     value={filters.minPrice ?? ''}
                     onChange={(e) => update('minPrice', e.target.value ? Number(e.target.value) : undefined)}
                     placeholder="0"
-                    className="w-full px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200"
-                    style={{
-                      background: 'var(--gray-100)',
-                      border: '1.5px solid transparent',
-                      color: 'var(--gray-900)',
-                      outline: 'none',
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.background = 'white'
-                      e.target.style.borderColor = '#378ADD'
-                      e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.12)'
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.background = 'var(--gray-100)'
-                      e.target.style.borderColor = 'transparent'
-                      e.target.style.boxShadow = 'none'
-                    }}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-100 border-2 border-transparent text-sm font-medium text-slate-900 outline-none transition-all duration-200 focus:bg-white focus:border-blue-400 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.12)] placeholder:text-slate-400"
                   />
                 </div>
                 <div>
@@ -307,23 +216,7 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
                     value={filters.maxPrice ?? ''}
                     onChange={(e) => update('maxPrice', e.target.value ? Number(e.target.value) : undefined)}
                     placeholder="999 999"
-                    className="w-full px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200"
-                    style={{
-                      background: 'var(--gray-100)',
-                      border: '1.5px solid transparent',
-                      color: 'var(--gray-900)',
-                      outline: 'none',
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.background = 'white'
-                      e.target.style.borderColor = '#378ADD'
-                      e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.12)'
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.background = 'var(--gray-100)'
-                      e.target.style.borderColor = 'transparent'
-                      e.target.style.boxShadow = 'none'
-                    }}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-100 border-2 border-transparent text-sm font-medium text-slate-900 outline-none transition-all duration-200 focus:bg-white focus:border-blue-400 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.12)] placeholder:text-slate-400"
                   />
                 </div>
               </div>

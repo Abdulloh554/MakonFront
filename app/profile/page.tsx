@@ -1,23 +1,34 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getCurrentUser, login, register, googleLogin, logout, getPropertiesByUser, syncProperties, syncSellers } from '@/store'
+import { useAuthStore } from '@/store/auth.store'
+import { getPropertiesByUser, syncProperties, syncSellers } from '@/store'
 import { useHydrated } from '@/hooks/useHydrated'
 import PropertyCard from '@/components/features/properties/PropertyCard'
 import PropertyModal from '@/components/features/properties/PropertyModal'
 import PageTransition from '@/components/layout/PageTransition'
 import StaggerGrid, { StaggerItem } from '@/components/layout/StaggerGrid'
-import LoginForm from '@/components/features/auth/LoginForm'
 import ProfileHeader from '@/components/features/sellers/ProfileHeader'
 import EmptyState from '@/components/ui/EmptyState'
-import type { User, Property } from '@/types'
-import { Home, Plus } from 'lucide-react'
+import type { Property } from '@/types'
+import { Home, Plus, UserIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
+
+interface ProfileUser {
+  id?: string
+  name: string
+  lastName?: string
+  email?: string
+  phone?: string
+  firstName?: string
+}
 
 export default function ProfilePage() {
   const router = useRouter()
   const hydrated = useHydrated()
+  const authUser = useAuthStore((s) => s.user)
+  const authLogout = useAuthStore((s) => s.logout)
   const [syncedProperties, setSyncedProperties] = useState<Property[]>([])
 
   useEffect(() => {
@@ -31,60 +42,31 @@ export default function ProfilePage() {
     return () => { active = false }
   }, [hydrated])
 
-  const [user, setUser] = useState<User | null>(() => {
-    if (hydrated) return getCurrentUser()
-    return null
-  })
-  const [showLogin, setShowLogin] = useState(() => {
-    if (hydrated) return !getCurrentUser()
-    return true
-  })
+  const [user, setUser] = useState<ProfileUser | null>(null)
 
   useEffect(() => {
-    let active = true
-    Promise.resolve().then(() => {
-      if (!active) return
-      const u = getCurrentUser()
-      setUser(u)
-      setShowLogin(!u)
-    })
-    return () => { active = false }
-  }, [hydrated])
+    if (!hydrated) return
+    if (authUser) {
+      setUser({
+        id: authUser.id,
+        name: authUser.firstName || authUser.name || '',
+        lastName: authUser.lastName,
+        email: authUser.email,
+        phone: authUser.phone || '',
+      })
+    }
+  }, [authUser, hydrated])
+
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
 
-  async function handleLogin(name: string, lastName: string, phone: string, password: string) {
-    const user = await login(phone, password)
-    const [syncedProps] = await Promise.all([syncProperties(), syncSellers()])
-    setUser(getCurrentUser())
-    setShowLogin(false)
-    setSyncedProperties(syncedProps)
-    return user
-  }
-
-  async function handleGoogleLogin(idToken: string) {
-    await googleLogin(idToken)
-    const [syncedProps] = await Promise.all([syncProperties(), syncSellers()])
-    setUser(getCurrentUser())
-    setShowLogin(false)
-    setSyncedProperties(syncedProps)
-  }
-
-  async function handleRegister(name: string, lastName: string, phone: string, password: string) {
-    const user = await register(name, lastName, phone, password)
-    const [syncedProps] = await Promise.all([syncProperties(), syncSellers()])
-    setUser(getCurrentUser())
-    setShowLogin(false)
-    setSyncedProperties(syncedProps)
-    return user
-  }
-
   function handleLogout() {
-    logout()
+    authLogout()
     setUser(null)
-    setShowLogin(true)
   }
 
-  if (showLogin || !user) {
+  if (!hydrated) return null
+
+  if (!user) {
     return (
       <PageTransition>
         <div className="flex-1 flex items-center justify-center px-4 md:px-8">
@@ -92,22 +74,63 @@ export default function ProfilePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as const }}
-            className="w-full max-w-sm space-y-3"
+            className="w-full max-w-sm text-center space-y-4"
           >
-            <LoginForm onLogin={handleLogin} onRegister={handleRegister} onGoogleLogin={handleGoogleLogin} />
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 15 }}
+              className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mx-auto shadow-lg shadow-blue-200"
+            >
+              <UserIcon className="w-8 h-8 text-white" />
+            </motion.div>
+            <h1 className="text-xl font-bold text-gray-900">Profilingizga kiring</h1>
+            <p className="text-sm text-gray-500">Email orqali kirish yoki ro&apos;yxatdan o&apos;tish</p>
+            <div className="space-y-2.5 pt-2">
+              <motion.a
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                href="/login"
+                className="block w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all"
+                style={{
+                  background: 'linear-gradient(135deg, #185FA5, #378ADD)',
+                  boxShadow: '0 4px 12px rgba(24,95,165,0.25)',
+                }}
+              >
+                Kirish
+              </motion.a>
+              <motion.a
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                href="/register"
+                className="block w-full py-2.5 rounded-xl text-sm font-bold transition-all"
+                style={{
+                  background: 'white',
+                  color: '#185FA5',
+                  border: '1.5px solid rgba(24,95,165,0.2)',
+                }}
+              >
+                Ro&apos;yxatdan o&apos;tish
+              </motion.a>
+            </div>
           </motion.div>
         </div>
       </PageTransition>
     )
   }
 
+  const displayUser = {
+    ...user,
+    firstName: user.firstName || user.name,
+  }
+
   const myProperties = syncedProperties.length > 0
-    ? getPropertiesByUser(user, syncedProperties)
-    : getPropertiesByUser(user)
+    ? getPropertiesByUser(displayUser as any, syncedProperties)
+    : getPropertiesByUser(displayUser as any)
 
   return (
     <PageTransition>
-      <ProfileHeader user={user} propertyCount={myProperties.length} onLogout={handleLogout} />
+      <ProfileHeader user={displayUser as any} propertyCount={myProperties.length} onLogout={handleLogout} />
 
       <div className="flex-1 px-4 md:px-6 lg:px-8 pt-4 pb-24 lg:pb-8">
         <div className="flex items-center justify-between mb-3">

@@ -4,8 +4,8 @@ import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import ContentWrapper from "@/components/layout/ContentWrapper";
 import ToastProvider from "@/components/ui/ToastProvider";
-import StoreInit from "@/components/layout/StoreInit";
 import SplashScreen from "@/components/layout/SplashScreen";
+import ClientProviders from "@/components/layout/ClientProviders";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -40,8 +40,8 @@ export default function RootLayout({
         className="min-h-dvh"
         style={{ background: "var(--gray-50)", fontFamily: "var(--font-inter), system-ui, sans-serif" }}
       >
+        <ClientProviders>
         <ToastProvider>
-        <StoreInit />
         <SplashScreen>
           <Navbar />
           <ContentWrapper>
@@ -49,6 +49,7 @@ export default function RootLayout({
           </ContentWrapper>
         </SplashScreen>
         </ToastProvider>
+        </ClientProviders>
       </body>
     </html>
   );

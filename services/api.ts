@@ -1,363 +1,319 @@
-import type {
-  Property,
-  Seller,
-  User,
-  Message,
-  Review,
-  FloorPlan,
-  FilterOptions,
-  Conversation,
-} from "../types";
+/**
+ * @file api.ts
+ * @layer Service
+ * @responsibility Typed API client — handles auth via httpOnly cookies, CSRF, automatic 401 refresh
+ */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
+import type { ApiResponse, ApiError } from '@shared/types/api.types'
+import type { AuthResponse, RefreshResponse, User } from '@shared/types/user.types'
+import type { Property, CreatePropertyRequest, PropertyFilters } from '@shared/types/property.types'
+import type { Conversation, Message, SendMessageRequest, SendMessageResponse } from '@shared/types/message.types'
+import type { Payment } from '@shared/types/payment.types'
+import { API_ROUTES } from '@shared/constants/routes'
 
-function getApiOrigin(): string {
+let csrfToken: string | null = null
+let isRefreshing = false
+let refreshPromise: Promise<boolean> | null = null
+
+export function setCsrfToken(token: string): void {
+  csrfToken = token
+}
+
+export function getCsrfToken(): string | null {
+  return csrfToken
+}
+
+export function clearCsrfToken(): void {
+  csrfToken = null
+}
+
+class ApiClientError extends Error {
+  public statusCode: number
+  public code: string
+  public details?: unknown
+
+  public constructor(error: ApiError['error']) {
+    super(error.message)
+    this.name = 'ApiClientError'
+    this.statusCode = 0
+    this.code = error.code
+    this.details = error.details
+  }
+}
+
+async function refreshSession(): Promise<boolean> {
   try {
-    if (API_BASE.startsWith("http://") || API_BASE.startsWith("https://")) {
-      const u = new URL(API_BASE);
-      return u.origin;
+    const response = await fetch(API_ROUTES.AUTH.REFRESH, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+    if (!response.ok) {
+      return false
     }
+
+    const body: ApiResponse<RefreshResponse> = await response.json()
+
+    if (!body.success) {
+      return false
+    }
+
+    setCsrfToken(body.data.csrfToken)
+    return true
   } catch {
-    // invalid URL, fall through
+    return false
   }
-  return "";
 }
 
-function resolveImageUrl(url: string): string {
-  if (!url || typeof url !== "string") return "";
-  if (
-    url.startsWith("http://") ||
-    url.startsWith("https://") ||
-    url.startsWith("data:") ||
-    url.startsWith("blob:")
-  ) {
-    return url;
-  }
-  return url;
-}
-
-// ─── Token management ───────────────────────────────────────────────
-const TOKEN_KEY = "makon_jwt_token";
-
-export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-export function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
-}
-
-export function clearToken(): void {
-  localStorage.removeItem(TOKEN_KEY);
-}
-
-// ─── Request helper ─────────────────────────────────────────────────
 async function request<T>(
   path: string,
-  options?: RequestInit & { skipAuth?: boolean },
+  options: RequestInit & { skipAuth?: boolean; skipCsrf?: boolean } = {},
 ): Promise<T> {
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-
-  if (!options?.skipAuth) {
-    const token = getToken();
-    if (!token) {
-      throw new Error("Avval tizimga kiring. Token topilmadi.");
-    }
-    headers["Authorization"] = `Bearer ${token}`;
+    'Content-Type': 'application/json',
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { ...headers, ...(options?.headers as Record<string, string>) },
+  if (!options.skipCsrf && csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken
+  }
+
+  let response = await fetch(path, {
     ...options,
-  });
+    headers: {
+      ...headers,
+      ...(options.headers as Record<string, string>),
+    },
+    credentials: 'include',
+  })
 
-  if (!res.ok) {
-    if (res.status === 401) {
-      clearToken();
+  // Auto-refresh on 401
+  if (response.status === 401 && !options.skipAuth) {
+    if (!isRefreshing) {
+      isRefreshing = true
+      refreshPromise = refreshSession().finally(() => {
+        isRefreshing = false
+        refreshPromise = null
+      })
     }
-    const body = await res.json().catch(() => ({ error: { message: res.statusText } }));
-    const errMessage = body?.error?.message || body?.error || body?.message || `API error: ${res.status}`;
-    throw new Error(errMessage);
-  }
 
-  const json = await res.json();
-  if (typeof json === "object" && json !== null && json.success === true) {
-    return json.data as T;
-  }
-  return json as T;
-}
+    const refreshed = await refreshPromise
 
-// ─── Mappers ────────────────────────────────────────────────────────
-function toId(
-  v: string | { id?: string; _id?: string } | null | undefined,
-): string {
-  if (!v) return "";
-  if (typeof v === "string") return v;
-  if (typeof v.id === "string") return v.id;
-  if (typeof v._id === "string") return v._id;
-  return String(v);
-}
+    if (refreshed) {
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken
+      }
 
-function mapProperty(p: Record<string, unknown>): Property {
-  return {
-    id: toId((p.id ?? p._id) as string | { id?: string; _id?: string } | null | undefined),
-    title: p.title as string,
-    description: p.description as string,
-    price: p.price as number,
-    images: (Array.isArray(p.images) ? (p.images as string[]) : typeof p.images === 'string' ? [p.images as string] : []).map(resolveImageUrl),
-    location: (p.location ?? { lat: 0, lng: 0, address: "" }) as Property["location"],
-    type: p.type as Property["type"],
-    dealType: p.dealType as Property["dealType"],
-    status: p.status as Property["status"],
-    sellerId: toId((p.sellerId as { id?: string })?.id ?? (p.sellerId as string)),
-    createdAt: p.createdAt as string,
-    rooms: p.rooms as number,
-    area: p.area as number,
-    floor: p.floor as number | undefined,
-    totalFloors: p.totalFloors as number | undefined,
-    installmentMonths: p.installmentMonths as number | undefined,
-    installmentPrice: p.installmentPrice as number | undefined,
-    floorPlan: p.floorPlan as FloorPlan | undefined,
-  };
-}
-
-function mapSeller(s: Record<string, unknown>): Seller {
-  return {
-    id: toId((s.id ?? s._id) as string | { id?: string; _id?: string } | null | undefined),
-    userId: toId(s.userId as string | { id?: string; _id?: string } | null | undefined) || undefined,
-    name: s.name as string,
-    phone: s.phone as string,
-    avatar: (s.avatar as string) || "/avatars/default.svg",
-    rating: (s.rating as number) ?? 0,
-    totalListings: (s.totalListings as number) ?? 0,
-  };
-}
-
-function mapUser(u: Record<string, unknown>): User {
-  return {
-    id: toId((u.id ?? u._id) as string | { id?: string; _id?: string } | null | undefined),
-    name: u.name as string,
-    phone: u.phone as string,
-    avatar: (u.avatar as string) || "/avatars/user.svg",
-    role: (u.role as "seller" | "buyer") || "buyer",
-  };
-}
-
-function mapMessage(m: Record<string, unknown>): Message {
-  return {
-    id: toId((m.id ?? m._id) as string | { id?: string; _id?: string } | null | undefined),
-    fromUserId: toId(((m.fromUserId as { id?: string })?.id ?? m.fromUserId) as string | { id?: string; _id?: string } | null | undefined),
-    toUserId: toId(((m.toUserId as { id?: string })?.id ?? m.toUserId) as string | { id?: string; _id?: string } | null | undefined),
-    propertyId: toId(((m.propertyId as { id?: string })?.id ?? m.propertyId) as string | { id?: string; _id?: string } | null | undefined),
-    text: m.text as string,
-    createdAt: m.createdAt as string,
-    read: (m.read as boolean) ?? false,
-  };
-}
-
-// ─── Auth API ───────────────────────────────────────────────────────
-interface AuthResponse {
-  token: string;
-  user: Record<string, unknown>;
-}
-
-export async function apiLogin(phone: string, password: string): Promise<{ token: string; user: User }> {
-  const data = await request<AuthResponse>(
-    "/auth/login",
-    { method: "POST", body: JSON.stringify({ phone, password }), skipAuth: true },
-  );
-  setToken(data.token);
-  return { token: data.token, user: mapUser(data.user) };
-}
-
-export async function apiRegister(firstName: string, lastName: string, phone: string, password: string): Promise<{ token: string; user: User }> {
-  const data = await request<AuthResponse>(
-    "/auth/register",
-    { method: "POST", body: JSON.stringify({ firstName, lastName, phone, password }), skipAuth: true },
-  );
-  setToken(data.token);
-  return { token: data.token, user: mapUser(data.user) };
-}
-
-export async function apiFetchMe(): Promise<User> {
-  const data = await request<Record<string, unknown>>("/auth/me");
-  return mapUser(data);
-}
-
-// ─── Image Upload API (hash ID based) ───────────────────────────────
-export async function apiUploadImage(base64DataUri: string): Promise<string> {
-  const data = await request<{ url: string }>("/images/upload", {
-    method: "POST",
-    body: JSON.stringify({ image: base64DataUri }),
-  });
-  return data.url;
-}
-
-// ─── Properties API ─────────────────────────────────────────────────
-export async function apiFetchProperties(
-  filters?: FilterOptions,
-): Promise<Property[]> {
-  const params = new URLSearchParams();
-  if (filters) {
-    if (filters.search) params.set("search", filters.search);
-    if (filters.dealType && filters.dealType !== "all") params.set("dealType", filters.dealType);
-    if (filters.propertyType && filters.propertyType !== "all") params.set("propertyType", filters.propertyType);
-    if (filters.status && filters.status !== "all") params.set("status", filters.status);
-    if (filters.minPrice !== undefined) params.set("minPrice", String(filters.minPrice));
-    if (filters.maxPrice !== undefined) params.set("maxPrice", String(filters.maxPrice));
-  }
-  const qs = params.toString();
-  const data = await request<Record<string, unknown>[]>(
-    `/properties${qs ? `?${qs}` : ""}`,
-    { skipAuth: true },
-  );
-  if (!Array.isArray(data)) {
-    throw new Error("API returned invalid properties data");
-  }
-  return data.map(mapProperty);
-}
-
-export async function apiFetchProperty(id: string): Promise<Property> {
-  const data = await request<Record<string, unknown>>(`/properties/${id}`, { skipAuth: true });
-  return mapProperty(data);
-}
-
-export async function apiCreateProperty(
-  data: Record<string, unknown>,
-): Promise<Property> {
-  const res = await request<Record<string, unknown>>("/properties", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-  return mapProperty(res);
-}
-
-// ─── Sellers API ────────────────────────────────────────────────────
-export async function apiFetchSellers(): Promise<Seller[]> {
-  const data = await request<Record<string, unknown>[]>("/sellers", { skipAuth: true });
-  return data.map(mapSeller);
-}
-
-export async function apiFetchSeller(id: string): Promise<Seller> {
-  const data = await request<Record<string, unknown>>(`/sellers/${id}`, { skipAuth: true });
-  return mapSeller(data);
-}
-
-export async function apiFetchSellerProperties(sellerId: string): Promise<Property[]> {
-  const data = await request<Record<string, unknown>[]>(
-    `/sellers/${sellerId}/properties`,
-    { skipAuth: true },
-  );
-  return data.map(mapProperty);
-}
-
-function mapReview(r: Record<string, unknown>): Review {
-  return {
-    id: toId((r.id ?? r._id) as string | { id?: string; _id?: string } | null | undefined),
-    sellerId: toId(r.sellerId as string | { id?: string; _id?: string } | null | undefined),
-    userId: toId(r.userId as string | { id?: string; _id?: string } | null | undefined),
-    userName: r.userName as string,
-    rating: (r.rating as number) ?? 0,
-    text: r.text as string,
-    createdAt: r.createdAt as string,
-  };
-}
-
-// ─── Reviews API ────────────────────────────────────────────────────
-export async function apiFetchReviewsBySeller(sellerId: string): Promise<Review[]> {
-  const data = await request<Record<string, unknown>[]>(
-    `/reviews/seller/${sellerId}`,
-    { skipAuth: true },
-  );
-  return data.map(mapReview);
-}
-
-export async function apiCreateReview(data: {
-  sellerId: string;
-  userId: string;
-  userName: string;
-  rating: number;
-  text: string;
-}): Promise<Review> {
-  const res = await request<Record<string, unknown>>("/reviews", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-  return mapReview(res);
-}
-
-// ─── Messages API ───────────────────────────────────────────────────
-export async function apiFetchConversations(): Promise<Conversation[]> {
-  const data = await request<Record<string, unknown>[]>("/messages/conversations");
-  return data.map((c) => ({
-    id: c.id as string,
-    participantId: c.participantId as string || c.id as string,
-    participantName: c.participantName as string || c.id as string,
-    lastMessage: c.lastMessage as string,
-    lastMessageAt: c.lastMessageAt as string,
-    unread: (c.unread as number) || 0,
-  }));
-}
-export async function apiFetchMessages(conversationId: string): Promise<Message[]> {
-  let data: Record<string, unknown>[];
-  try {
-    data = await request<Record<string, unknown>[]>(
-      `/messages/${conversationId}`,
-    );
-  } catch (err) {
-    if (!(err instanceof Error) || !/404|not found/i.test(err.message)) {
-      throw err;
+      response = await fetch(path, {
+        ...options,
+        headers: {
+          ...headers,
+          ...(options.headers as Record<string, string>),
+        },
+        credentials: 'include',
+      })
+    } else {
+      clearCsrfToken()
+      window.location.href = '/profile'
+      throw new ApiClientError({ code: 'UNAUTHORIZED', message: 'Session expired. Please log in again.' })
     }
-    data = await request<Record<string, unknown>[]>(
-      `/messages?userId=${encodeURIComponent(conversationId)}`,
-    );
   }
-  return data.map(mapMessage);
+
+  if (!response.ok) {
+    let errorBody: ApiError['error'] | undefined
+
+    try {
+      const body: ApiResponse<unknown> = await response.json()
+      if (!body.success) {
+        errorBody = body.error
+      }
+    } catch {
+      // JSON parse failed
+    }
+
+    throw new ApiClientError(
+      errorBody || {
+        code: 'INTERNAL_ERROR',
+        message: `Request failed with status ${response.status}`,
+      },
+    )
+  }
+
+  if (response.status === 204) {
+    return undefined as T
+  }
+
+  const body: ApiResponse<T> = await response.json()
+
+  if (!body.success) {
+    throw new ApiClientError(body.error)
+  }
+
+  return body.data
 }
 
-export async function apiSendMessage(
-  toUserId: string,
-  propertyId: string,
-  text: string,
-): Promise<Message> {
-  const res = await request<Record<string, unknown>>("/messages", {
-    method: "POST",
-    body: JSON.stringify({ toUserId, propertyId: propertyId || "general", text }),
-  });
-  return mapMessage(res);
+// ─── Auth API ──────────────────────────────────────────────────────────
+
+export const authApi = {
+  async login(phone: string, password: string): Promise<{ user: User; csrfToken: string }> {
+    const data = await request<AuthResponse>(API_ROUTES.AUTH.LOGIN, {
+      method: 'POST',
+      body: JSON.stringify({ phone, password }),
+      skipAuth: true,
+    })
+
+    setCsrfToken(data.csrfToken)
+    return data
+  },
+
+  async register(firstName: string, lastName: string, phone: string, password: string): Promise<{ user: User; csrfToken: string }> {
+    const data = await request<AuthResponse>(API_ROUTES.AUTH.REGISTER, {
+      method: 'POST',
+      body: JSON.stringify({ firstName, lastName, phone, password }),
+      skipAuth: true,
+    })
+
+    setCsrfToken(data.csrfToken)
+    return data
+  },
+
+  async me(): Promise<User> {
+    return request<User>(API_ROUTES.AUTH.ME, { skipAuth: true })
+  },
+
+  async logout(): Promise<void> {
+    await request(API_ROUTES.AUTH.LOGOUT, { method: 'POST' })
+    clearCsrfToken()
+  },
+
+  async forgotPassword(phone: string): Promise<{ message: string }> {
+    return request(API_ROUTES.AUTH.FORGOT_PASSWORD, {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+      skipAuth: true,
+    })
+  },
+
+  async resetPassword(token: string, password: string): Promise<{ message: string }> {
+    return request(API_ROUTES.AUTH.RESET_PASSWORD, {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+      skipAuth: true,
+    })
+  },
 }
 
-export async function apiUnreadCount(): Promise<number> {
-  const res = await request<{ unread: number }>("/messages/unread");
-  return res.unread;
+// ─── Upload API ───────────────────────────────────────────────────────
+
+export async function apiUploadImage(base64: string): Promise<string> {
+  const data = await request<{ url: string }>(API_ROUTES.IMAGES.UPLOAD, {
+    method: 'POST',
+    body: JSON.stringify({ image: base64 }),
+  })
+  return data.url
 }
 
-export async function apiUpdateMessage(
-  messageId: string,
-  text: string,
-): Promise<Message> {
-  const res = await request<Record<string, unknown>>(`/messages/${messageId}`, {
-    method: "PUT",
-    body: JSON.stringify({ text }),
-  });
-  return mapMessage(res);
+// ─── Properties API ────────────────────────────────────────────────────
+
+export const propertyApi = {
+  async list(filters?: PropertyFilters): Promise<Property[]> {
+    const params = new URLSearchParams()
+    if (filters?.search) params.set('search', filters.search)
+    if (filters?.dealType && filters.dealType !== 'all') params.set('dealType', filters.dealType)
+    if (filters?.propertyType && filters.propertyType !== 'all') params.set('propertyType', filters.propertyType)
+    if (filters?.status && filters.status !== 'all') params.set('status', filters.status)
+    if (filters?.minPrice !== undefined) params.set('minPrice', String(filters.minPrice))
+    if (filters?.maxPrice !== undefined) params.set('maxPrice', String(filters.maxPrice))
+    if (filters?.page) params.set('page', String(filters.page))
+    if (filters?.limit) params.set('limit', String(filters.limit))
+
+    const qs = params.toString()
+    return request<Property[]>(
+      `${API_ROUTES.PROPERTIES.LIST}${qs ? `?${qs}` : ''}`,
+      { skipAuth: true },
+    )
+  },
+
+  async detail(id: string): Promise<Property> {
+    return request<Property>(API_ROUTES.PROPERTIES.DETAIL(id), { skipAuth: true })
+  },
+
+  async create(data: CreatePropertyRequest): Promise<Property> {
+    return request<Property>(API_ROUTES.PROPERTIES.CREATE, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  async update(id: string, data: Partial<CreatePropertyRequest>): Promise<Property> {
+    return request<Property>(API_ROUTES.PROPERTIES.UPDATE(id), {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  },
+
+  async delete(id: string): Promise<void> {
+    await request(API_ROUTES.PROPERTIES.DELETE(id), { method: 'DELETE' })
+  },
+
+  async mine(): Promise<Property[]> {
+    return request<Property[]>(API_ROUTES.PROPERTIES.MINE)
+  },
 }
 
-export async function apiDeleteMessage(
-  messageId: string,
-): Promise<void> {
-  await request(`/messages/${messageId}`, {
-    method: "DELETE",
-  });
+// ─── Messages API ──────────────────────────────────────────────────────
+
+export const messageApi = {
+  async conversations(): Promise<Conversation[]> {
+    return request<Conversation[]>(API_ROUTES.MESSAGES.CONVERSATIONS)
+  },
+
+  async list(conversationId: string): Promise<Message[]> {
+    return request<Message[]>(API_ROUTES.MESSAGES.LIST(conversationId))
+  },
+
+  async send(data: SendMessageRequest): Promise<SendMessageResponse> {
+    return request<SendMessageResponse>(API_ROUTES.MESSAGES.SEND, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  async update(id: string, text: string): Promise<Message> {
+    return request<Message>(API_ROUTES.MESSAGES.UPDATE(id), {
+      method: 'PUT',
+      body: JSON.stringify({ text }),
+    })
+  },
+
+  async delete(id: string): Promise<void> {
+    await request(API_ROUTES.MESSAGES.DELETE(id), { method: 'DELETE' })
+  },
 }
 
-export async function apiGoogleLogin(idToken: string): Promise<{ token: string; user: User }> {
-  const res = await request<{ token: string; user: Record<string, unknown> }>(
-    "/auth/google",
-    { method: "POST", body: JSON.stringify({ idToken }), skipAuth: true },
-  );
-  return { token: res.token, user: mapUser(res.user) };
+// ─── Sellers API ───────────────────────────────────────────────────────
+
+export const sellerApi = {
+  async list(): Promise<User[]> {
+    return request<User[]>(API_ROUTES.SELLERS.LIST, { skipAuth: true })
+  },
+
+  async detail(id: string): Promise<User> {
+    return request<User>(API_ROUTES.SELLERS.DETAIL(id), { skipAuth: true })
+  },
+}
+
+// ─── Payments API ──────────────────────────────────────────────────────
+
+export const paymentApi = {
+  async create(data: { propertyId: string; amount: number; provider: string }): Promise<Payment> {
+    return request<Payment>(API_ROUTES.PAYMENTS.CREATE, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  async history(): Promise<Payment[]> {
+    return request<Payment[]>(API_ROUTES.PAYMENTS.HISTORY)
+  },
 }

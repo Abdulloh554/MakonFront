@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Crosshair } from 'lucide-react'
@@ -13,6 +13,10 @@ const defaultCenter: [number, number] = [41.3111, 69.2797]
 interface MapViewProps {
   properties: Property[]
   onMarkerClick: (property: Property) => void
+}
+
+export interface MapViewHandle {
+  flyTo: (lat: number, lng: number) => void
 }
 
 function formatPrice(price: number): string {
@@ -55,7 +59,7 @@ function createUserIcon(): L.DivIcon {
   })
 }
 
-export default function MapView({ properties, onMarkerClick }: MapViewProps) {
+const MapView = forwardRef<MapViewHandle, MapViewProps>(({ properties, onMarkerClick }, ref) => {
   const { showToast } = useToast()
   const mapRef = useRef<L.Map | null>(null)
   const markersRef = useRef<Map<string, L.Marker>>(new Map())
@@ -91,6 +95,14 @@ export default function MapView({ properties, onMarkerClick }: MapViewProps) {
       mapRef.current = null
     }
   }, [])
+
+  useImperativeHandle(ref, () => ({
+    flyTo: (lat: number, lng: number) => {
+      if (mapRef.current) {
+        mapRef.current.flyTo([lat, lng], 15, { duration: 0.8 })
+      }
+    },
+  }), [])
 
   useEffect(() => {
     if (!mapRef.current) return
@@ -342,4 +354,6 @@ export default function MapView({ properties, onMarkerClick }: MapViewProps) {
       </div>
     </div>
   )
-}
+})
+
+export default MapView

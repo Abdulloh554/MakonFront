@@ -12,7 +12,7 @@ import {
   deleteMessage,
 } from "@/store";
 import { useHydrated } from "@/hooks/useHydrated";
-import { apiFetchMessages, apiFetchConversations } from "@/services/api";
+import { messageApi } from "@/services/api";
 import { useSocket } from "@/hooks/useSocket";
 
 import { useSearchParams, useRouter } from "next/navigation";
@@ -128,8 +128,8 @@ function MessagesContent() {
 
     startTransition(() => setLoadingRemoteMessages(true));
 
-    apiFetchMessages(conversationPartnerId)
-      .then((messages) => {
+    messageApi.list(conversationPartnerId)
+      .then((messages: Message[]) => {
         setServerMessages(messages.length > 0 ? messages : []);
       })
       .catch(() => {
@@ -147,7 +147,7 @@ function MessagesContent() {
       startTransition(() => setLoadingConversations(false));
       return;
     }
-    apiFetchConversations()
+    messageApi.conversations()
       .then(setConversations)
       .catch(() => {})
       .finally(() => setLoadingConversations(false));
@@ -325,7 +325,15 @@ function MessagesContent() {
 
   return (
     <PageTransition>
-      <PageHeader title="Xabarlar" />
+      <PageHeader
+        title="Xabarlar"
+        subtitle="Sotuvchilar bilan suhbat"
+        icon={
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center shadow-sm">
+            <MessageSquare className="w-4 h-4 text-white" />
+          </div>
+        }
+      />
 
       <div className="flex-1 flex min-h-0 overflow-hidden px-4 md:px-6 lg:px-8 pb-4 lg:pb-6">
         <div className="flex w-full max-w-5xl mx-auto gap-4 flex-1 min-h-0">
@@ -409,10 +417,10 @@ function MessagesContent() {
             </div>
           </div>
 
-          <div className={`flex-col flex-1 min-h-0 pb-16 md:pb-0 ${!showChat ? "hidden md:flex" : "flex"}`}>
+          <div className={`flex-col flex-1 min-h-0 pb-16 lg:pb-0 ${!showChat ? "hidden md:flex" : "flex"}`}>
             {showChat ? (
-              <div className="relative flex flex-col flex-1 min-h-0 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm">
-                <div className="shrink-0 flex items-center gap-3 px-5 py-4 border-b border-slate-200">
+              <div className="flex flex-col flex-1 min-h-0 rounded-[32px] border border-slate-200 bg-white shadow-sm">
+                <div className="sticky top-0 z-10 flex items-center gap-3 px-5 py-4 border-b border-slate-200 bg-white rounded-t-[32px]">
                   <div className="relative">
                     <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-xs">
                       {partnerName.charAt(0) || "?"}
@@ -443,7 +451,7 @@ function MessagesContent() {
                 <div
                   ref={scrollContainerRef}
                   onScroll={handleScroll}
-                  className="flex-1 overflow-y-auto p-5 space-y-3 relative"
+                  className="flex-1 overflow-y-auto p-5 pb-12 space-y-3 relative"
                 >
                   {loadingRemoteMessages ? (
                     <div className="space-y-3">
@@ -475,20 +483,19 @@ function MessagesContent() {
                       )}
                     </>
                   )}
+                  {showScrollBtn && (
+                    <button
+                      type="button"
+                      onClick={autoScroll}
+                      className="sticky bottom-4 left-[calc(100%-3.5rem)] z-10 w-9 h-9 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-500 hover:text-gray-700 hover:shadow-lg transition-all"
+                    >
+                      <ChevronDown className="w-5 h-5" />
+                    </button>
+                  )}
                   <div ref={chatEndRef} />
                 </div>
 
-                {showScrollBtn && (
-                  <button
-                    type="button"
-                    onClick={autoScroll}
-                    className="absolute bottom-20 right-8 z-10 w-9 h-9 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-500 hover:text-gray-700 hover:shadow-lg transition-all"
-                  >
-                    <ChevronDown className="w-5 h-5" />
-                  </button>
-                )}
-
-                <div className="shrink-0 border-t border-slate-200 p-4">
+                <div className="sticky bottom-0 z-10 border-t border-slate-200 bg-white rounded-b-[32px] p-4">
                   {editingMessageId && (
                     <div className="flex items-center justify-between gap-4 px-2 pb-2 text-xs text-gray-500">
                       <span>Xabarni tahrirlash rejimida</span>

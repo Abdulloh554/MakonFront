@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, startTransition } from 'react'
-import { Users, Store, ChevronRight, Star, Phone, MessageCircle } from 'lucide-react'
+import { Users, ChevronRight, Star } from 'lucide-react'
 import { motion } from 'framer-motion'
 import PageTransition from '@/components/layout/PageTransition'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -28,43 +28,27 @@ export default function SellersPage() {
 
   return (
     <PageTransition>
-      <div
-        className="sticky top-0 z-20 px-4 md:px-6 lg:px-8 pt-4 pb-3"
-        style={{
-          background: 'rgba(255,255,255,0.92)',
-          backdropFilter: 'blur(24px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-          borderBottom: '1px solid rgba(226,232,240,0.7)',
-        }}
+      <motion.div
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+        className="sticky top-0 lg:top-0 z-20 bg-white/80 backdrop-blur-2xl border-b border-gray-100 px-4 md:px-6 lg:px-8 py-3"
       >
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-          className="flex items-center gap-2.5 mb-3"
-        >
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: 'linear-gradient(135deg, #185FA5, #378ADD)' }}
+        <div className="flex items-center gap-2.5">
+          <motion.div
+            initial={{ scale: 0.6, rotate: -12 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+            className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-sm"
           >
-            <Store className="w-5 h-5 text-white" />
+            <Users className="w-4 h-4 text-white" />
+          </motion.div>
+          <div>
+            <h1 className="text-base font-bold text-gray-900">Sotuvchilar</h1>
+            <p className="text-[10px] text-gray-400 font-medium">{sellers.length} ta sotuvchi</p>
           </div>
-          <div className="flex-1 min-w-0">
-            <h1
-              className="text-xl font-black tracking-tight leading-none"
-              style={{
-                background: 'linear-gradient(135deg, #185FA5 0%, #378ADD 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
-              Sotuvchilar
-            </h1>
-            <p className="text-[11px] text-slate-400 font-medium mt-0.5">{sellers.length} ta sotuvchi</p>
-          </div>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
 
       <div className="flex-1 px-4 md:px-6 lg:px-8 pt-5 pb-28 lg:pb-8">
         {sellers.length === 0 ? (

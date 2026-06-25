@@ -1,52 +1,34 @@
-const ADMIN_TOKEN_KEY = 'makon_admin_token'
-const ADMIN_USER_KEY = 'makon_admin_user'
+// Admin user is stored in-memory only (not localStorage) to prevent XSS data leaks
+// Admin auth uses httpOnly cookies set by the backend — no tokens stored on the client
 
-function getToken(): string | null {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem(ADMIN_TOKEN_KEY)
-}
-
-function setToken(token: string): void {
-  localStorage.setItem(ADMIN_TOKEN_KEY, token)
-}
-
-function clearToken(): void {
-  localStorage.removeItem(ADMIN_TOKEN_KEY)
-}
+let _adminUser: Record<string, unknown> | null = null
 
 export function getAdminUser(): Record<string, unknown> | null {
-  if (typeof window === 'undefined') return null
-  const raw = localStorage.getItem(ADMIN_USER_KEY)
-  if (!raw) return null
-  try { return JSON.parse(raw) } catch { return null }
+  return _adminUser
 }
 
 export function setAdminUser(user: Record<string, unknown>): void {
-  localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(user))
+  _adminUser = user
 }
 
 export function clearAdminUser(): void {
-  localStorage.removeItem(ADMIN_USER_KEY)
+  _adminUser = null
 }
 
 export function isAdminLoggedIn(): boolean {
-  return getToken() !== null && getAdminUser() !== null
+  return _adminUser !== null
 }
 
 export function adminLogout(): void {
-  clearToken()
-  clearAdminUser()
+  _adminUser = null
 }
 
 async function adminRequest<T>(path: string, options?: RequestInit): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  const token = getToken()
-  if (token) headers['Authorization'] = `Bearer ${token}`
 
-  const res = await fetch(`/api/admin${path}`, { headers, ...options })
+  const res = await fetch(`/api/v1/admin${path}`, { headers, credentials: 'include', ...options })
   if (!res.ok) {
     if (res.status === 401 || res.status === 403) {
-      clearToken()
       clearAdminUser()
       window.location.href = '/admin'
       throw new Error('Sessiya tugagan. Qaytadan kiring.')
@@ -69,13 +51,12 @@ export interface PaginatedResult<T> {
   data: T[]; total: number; page: number; totalPages: number
 }
 
-export async function apiAdminLogin(username: string, password: string): Promise<{ token: string; user: Record<string, unknown> }> {
-  const data = await adminRequest<{ token: string; user: Record<string, unknown> }>('/login', {
+export async function apiAdminLogin(username: string, password: string): Promise<{ user: Record<string, unknown> }> {
+  const data = await adminRequest<{ user: Record<string, unknown> }>('/login', {
     method: 'POST',
     body: JSON.stringify({ username, password }),
   })
-  setToken(data.token)
-  setAdminUser(data.user)
+  _adminUser = data.user
   return data
 }
 
