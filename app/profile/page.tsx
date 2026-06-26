@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuthStore } from '@/store/auth.store'
 import { getPropertiesByUser, syncProperties, syncSellers } from '@/store'
 import { useHydrated } from '@/hooks/useHydrated'
@@ -10,7 +10,7 @@ import PageTransition from '@/components/layout/PageTransition'
 import StaggerGrid, { StaggerItem } from '@/components/layout/StaggerGrid'
 import ProfileHeader from '@/components/features/sellers/ProfileHeader'
 import EmptyState from '@/components/ui/EmptyState'
-import type { Property } from '@/types'
+import type { Property, User, UserRole, AuthProvider } from '@/types'
 import { Home, Plus, UserIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -22,6 +22,13 @@ interface ProfileUser {
   email?: string
   phone?: string
   firstName?: string
+  avatar?: string
+  role?: UserRole
+  isActive?: boolean
+  isVerified?: boolean
+  provider?: AuthProvider
+  createdAt?: string
+  updatedAt?: string
 }
 
 export default function ProfilePage() {
@@ -42,18 +49,14 @@ export default function ProfilePage() {
     return () => { active = false }
   }, [hydrated])
 
-  const [user, setUser] = useState<ProfileUser | null>(null)
-
-  useEffect(() => {
-    if (!hydrated) return
-    if (authUser) {
-      setUser({
-        id: authUser.id,
-        name: authUser.firstName || authUser.name || '',
-        lastName: authUser.lastName,
-        email: authUser.email,
-        phone: authUser.phone || '',
-      })
+  const user = useMemo<ProfileUser | null>(() => {
+    if (!hydrated || !authUser) return null
+    return {
+      id: authUser.id,
+      name: authUser.firstName || authUser.name || '',
+      lastName: authUser.lastName,
+      email: authUser.email,
+      phone: authUser.phone || '',
     }
   }, [authUser, hydrated])
 
@@ -61,7 +64,6 @@ export default function ProfilePage() {
 
   function handleLogout() {
     authLogout()
-    setUser(null)
   }
 
   if (!hydrated) return null
@@ -121,16 +123,27 @@ export default function ProfilePage() {
 
   const displayUser = {
     ...user,
+    id: user.id || '',
     firstName: user.firstName || user.name,
-  }
+    lastName: user.lastName || '',
+    name: user.name || '',
+    phone: user.phone || '',
+    avatar: user.avatar || '',
+    role: user.role || 'user',
+    isActive: user.isActive ?? true,
+    isVerified: user.isVerified ?? false,
+    provider: user.provider || 'local',
+    createdAt: user.createdAt || '',
+    updatedAt: user.updatedAt || '',
+  } satisfies User
 
   const myProperties = syncedProperties.length > 0
-    ? getPropertiesByUser(displayUser as any, syncedProperties)
-    : getPropertiesByUser(displayUser as any)
+    ? getPropertiesByUser(displayUser, syncedProperties)
+    : getPropertiesByUser(displayUser)
 
   return (
     <PageTransition>
-      <ProfileHeader user={displayUser as any} propertyCount={myProperties.length} onLogout={handleLogout} />
+      <ProfileHeader user={displayUser} propertyCount={myProperties.length} onLogout={handleLogout} />
 
       <div className="flex-1 px-4 md:px-6 lg:px-8 pt-4 pb-24 lg:pb-8">
         <div className="flex items-center justify-between mb-3">

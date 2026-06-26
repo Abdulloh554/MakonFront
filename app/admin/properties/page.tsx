@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, startTransition } from 'react'
+import { useState, useEffect, useCallback, startTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trash2, ChevronLeft, ChevronRight, Search } from 'lucide-react'
+import { Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { apiAdminProperties, apiAdminDeleteProperty, isAdminLoggedIn } from '@/services/admin'
 
 const dealLabels: Record<string, string> = { daily: 'Kunlik', sale: 'Sotiladi', rent: 'Ijara', installment: 'Nasiya' }
@@ -15,24 +15,21 @@ export default function AdminProperties() {
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
-  const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState<Record<string, string>>({})
 
-  const load = async () => {
-    setLoading(true)
+  const load = useCallback(async () => {
     try {
       const res = await apiAdminProperties(page, 20, filters)
       setProperties(res.data)
       setTotal(res.total)
       setTotalPages(res.totalPages)
     } catch { router.replace('/admin') }
-    setLoading(false)
-  }
+  }, [page, filters, router])
 
   useEffect(() => {
     if (!isAdminLoggedIn()) { router.replace('/admin'); return }
     startTransition(() => load())
-  }, [page, filters])
+  }, [load, router])
 
   async function handleDelete(id: string, title: string) {
     if (!confirm(`"${title}" — e'lonni o'chirishni tasdiqlaysizmi?`)) return

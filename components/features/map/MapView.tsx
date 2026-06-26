@@ -59,7 +59,7 @@ function createUserIcon(): L.DivIcon {
   })
 }
 
-const MapView = forwardRef<MapViewHandle, MapViewProps>(({ properties, onMarkerClick }, ref) => {
+const MapView = forwardRef<MapViewHandle, MapViewProps>(function MapView({ properties, onMarkerClick }, ref) {
   const { showToast } = useToast()
   const mapRef = useRef<L.Map | null>(null)
   const markersRef = useRef<Map<string, L.Marker>>(new Map())
@@ -225,7 +225,7 @@ const MapView = forwardRef<MapViewHandle, MapViewProps>(({ properties, onMarkerC
   }, [userLocation])
 
   return (
-    <div className="relative flex-1">
+    <div className="absolute inset-0">
       <style>{`
         @keyframes ping-user {
           0%   { transform: scale(1); opacity: 0.6; }

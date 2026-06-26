@@ -4,10 +4,11 @@
  * @responsibility Message-related TanStack Query hooks — useConversations, useMessages
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { messageApi } from '@/services/api'
 import type { SendMessageRequest } from '@shared/types/message.types'
 import { useUiStore } from '@/store/ui.store'
+import { queryClient } from '@/lib/queryClient'
 
 const MESSAGE_KEYS = {
   conversations: ['messages', 'conversations'] as const,
@@ -34,7 +35,6 @@ export function useMessages(conversationId: string) {
 }
 
 export function useSendMessage() {
-  const queryClient = useQueryClient()
   const addToast = useUiStore((s) => s.addToast)
 
   return useMutation({
@@ -52,7 +52,6 @@ export function useSendMessage() {
 }
 
 export function useUpdateMessage() {
-  const queryClient = useQueryClient()
   const addToast = useUiStore((s) => s.addToast)
 
   return useMutation({
@@ -64,7 +63,6 @@ export function useUpdateMessage() {
 }
 
 export function useDeleteMessage() {
-  const queryClient = useQueryClient()
   const addToast = useUiStore((s) => s.addToast)
 
   return useMutation({

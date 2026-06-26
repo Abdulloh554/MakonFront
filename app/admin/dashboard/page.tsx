@@ -25,7 +25,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!isAdminLoggedIn()) { router.replace('/admin'); return }
     apiAdminStats().then(setStats).catch(() => {}).finally(() => setLoading(false))
-  }, [])
+  }, [router])
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">

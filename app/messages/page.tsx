@@ -78,7 +78,7 @@ function MessagesContent() {
   }, [messageVersion, serverMessages?.length]);
 
   const property = propertyId ? getProperty(propertyId) : null;
-  const myMessages = user ? getMessages(user.id) : [];
+  const myMessages = useMemo(() => user ? getMessages(user.id) : [], [user]);
 
   const conversationPartnerId = useMemo(() => {
     if (!user) return null;
@@ -138,7 +138,7 @@ function MessagesContent() {
       .finally(() => {
         setLoadingRemoteMessages(false);
       });
-  }, [hydrated, user?.id, conversationPartnerId]);
+  }, [hydrated, user?.id, conversationPartnerId, user]);
 
   const [loadingConversations, setLoadingConversations] = useState(true);
 
@@ -151,7 +151,7 @@ function MessagesContent() {
       .then(setConversations)
       .catch(() => {})
       .finally(() => setLoadingConversations(false));
-  }, [hydrated, user?.id, messageVersion]);
+  }, [hydrated, user?.id, messageVersion, user]);
 
   useEffect(() => {
     if (!conversationPartnerId) return;
@@ -516,6 +516,7 @@ function MessagesContent() {
                       onKeyDown={handleInputKeyDown}
                       placeholder={editingMessageId ? "Xabarni tahrirlash..." : "Xabar yozish..."}
                       rows={1}
+                      aria-label={editingMessageId ? "Xabarni tahrirlash" : "Xabar yozish"}
                       className="flex-1 px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none resize-none min-h-[42px] max-h-[120px] leading-relaxed"
                       style={{ height: "auto" }}
                       onInput={(e) => {
@@ -528,6 +529,7 @@ function MessagesContent() {
                       whileTap={{ scale: 0.9 }}
                       onClick={handleSend}
                       disabled={!newMessage.trim()}
+                      aria-label="Xabarni yuborish"
                       className="p-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-all shrink-0"
                     >
                       <Send className="w-5 h-5" />

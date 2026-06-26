@@ -9,7 +9,7 @@ interface LoadingSpinnerProps {
 
 export default function LoadingSpinner({ text = 'Yuklanmoqda...', className = '' }: LoadingSpinnerProps) {
   return (
-    <div className={`flex-1 flex items-center justify-center ${className}`}>
+    <div role="status" aria-label={text} className={`flex-1 flex items-center justify-center ${className}`}>
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}

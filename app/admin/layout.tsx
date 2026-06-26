@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, Building2, Store, MessageSquare,
-  LogOut, Menu, X, ChevronRight, ShieldAlert
+  LogOut, Menu, ChevronRight, ShieldAlert
 } from 'lucide-react'
 import { isAdminLoggedIn, adminLogout, getAdminUser } from '@/services/admin'
 

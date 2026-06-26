@@ -2,41 +2,33 @@
 
 import type { Property, User, Message } from '../types'
 import type { Seller, Review, FilterOptions } from '../types'
-import { authApi, propertyApi, messageApi, sellerApi } from '../services/api'
+import { propertyApi, messageApi, sellerApi } from '../services/api'
 import { normalizePhone, isValidUzbekPhone } from '../utils/phone'
+import { useAuthStore } from './auth.store'
 
 let _properties: Property[] = []
 let _sellers: Seller[] = []
 let _messages: Message[] = []
-let _reviews: Review[] = []
-
-let _currentUser: User | null = null
+const _reviews: Review[] = []
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2)
 }
 
-// ─── Auth (in-memory only — no localStorage to prevent XSS data leaks) ──
-export async function login(phone: string, password: string): Promise<User> {
-  const normalized = normalizePhone(phone)
-  const { user } = await authApi.login(normalized, password)
-  _currentUser = user
-  return user
+// ─── Auth (delegated to useAuthStore — single source of truth) ──
+export function getCurrentUser(): User | null {
+  return useAuthStore.getState().user
 }
 
-export async function googleLogin(idToken: string): Promise<User> {
-  const response = await fetch('/api/v1/auth/google', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ idToken }),
-  })
-  const body = await response.json()
-  if (!body.success) throw new Error(body.error?.message || 'Google login failed')
-  const { setCsrfToken } = await import('@/services/api')
-  setCsrfToken(body.data.csrfToken)
-  _currentUser = body.data.user
-  return body.data.user
+export function isAuthenticated(): boolean {
+  return useAuthStore.getState().isAuthenticated
+}
+
+export async function login(phone: string, password: string): Promise<User> {
+  const normalized = normalizePhone(phone)
+  const store = useAuthStore.getState()
+  await store.login(normalized, password)
+  return store.user!
 }
 
 export async function register(firstName: string, lastName: string, phone: string, password: string): Promise<User> {
@@ -44,38 +36,19 @@ export async function register(firstName: string, lastName: string, phone: strin
   if (!isValidUzbekPhone(normalized)) {
     throw new Error("Noto'g'ri O'zbekiston telefon raqami")
   }
-  const { user } = await authApi.register(firstName, lastName, normalized, password)
-  _currentUser = user
-  return user
-}
-
-export async function restoreSession(): Promise<User | null> {
-  if (_currentUser) return _currentUser
-
-  try {
-    const user = await authApi.me()
-    _currentUser = user
-    return user
-  } catch {
-    return null
-  }
-}
-
-export function getCurrentUser(): User | null {
-  return _currentUser
+  const store = useAuthStore.getState()
+  await store.register(firstName, lastName, normalized, password)
+  return store.user!
 }
 
 export async function logout(): Promise<void> {
-  try {
-    await authApi.logout()
-  } catch {
-    // ignore
-  }
-  _currentUser = null
+  await useAuthStore.getState().logout()
 }
 
-export function isAuthenticated(): boolean {
-  return _currentUser !== null
+export async function restoreSession(): Promise<User | null> {
+  const store = useAuthStore.getState()
+  await store.restoreSession()
+  return store.user
 }
 
 // ─── Properties ─────────────────────────────────────────────────────
@@ -197,12 +170,8 @@ export async function fetchSeller(id: string): Promise<Seller | undefined> {
   }
 }
 
-export async function fetchSellerProperties(sellerId: string): Promise<Property[]> {
-  try {
-    return _properties.filter((p) => p.sellerId === sellerId)
-  } catch {
-    return _properties.filter((p) => p.sellerId === sellerId)
-  }
+export function fetchSellerProperties(sellerId: string): Property[] {
+  return _properties.filter((p) => p.sellerId === sellerId)
 }
 
 export function getPropertiesBySeller(sellerId: string): Property[] {
@@ -224,8 +193,7 @@ export function getPropertiesByUser(user: User, source?: Property[]): Property[]
 }
 
 // ─── Reviews ────────────────────────────────────────────────────────
-export async function fetchReviewsBySeller(sellerId: string): Promise<Review[]> {
-  // Reviews API not implemented yet; return empty
+export function fetchReviewsBySeller(sellerId: string): Review[] {
   return _reviews.filter((r) => r.sellerId === sellerId)
 }
 

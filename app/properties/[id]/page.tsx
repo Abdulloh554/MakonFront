@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { MapPin, Maximize, BedDouble, Layers, Calendar, Phone, MessageCircle, Star, Building2, ChevronRight } from 'lucide-react'
@@ -62,10 +63,12 @@ export default async function PropertyDetailPage({ params }: Props) {
     <div className="max-w-4xl mx-auto px-4 py-6 md:py-10">
       {/* Image gallery */}
       <div className="relative h-64 sm:h-80 md:h-96 rounded-2xl overflow-hidden bg-slate-100 mb-6">
-        <img
+        <Image
           src={property.images[0] || '/placeholder.svg'}
           alt={property.title}
-          className="w-full h-full object-cover"
+          fill
+          className="object-cover"
+          unoptimized
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
         <div className="absolute bottom-4 left-4">

@@ -6,15 +6,12 @@ import { motion } from 'framer-motion'
 import type { Seller } from '@/types'
 import { getCurrentUser, getProperties, sendMessage } from '@/store'
 import { useRouter } from 'next/navigation'
-import { useToast } from '@/components/ui/ToastProvider'
-
 interface SellerHeaderProps {
   seller: Seller
 }
 
 export default function SellerHeader({ seller }: SellerHeaderProps) {
   const router = useRouter()
-  const { showToast } = useToast()
   const [showPhone, setShowPhone] = useState(false)
 
   function handleContact() {

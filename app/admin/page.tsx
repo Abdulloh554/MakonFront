@@ -16,7 +16,7 @@ export default function AdminLoginPage() {
 
   useEffect(() => {
     if (isAdminLoggedIn()) router.replace('/admin/dashboard')
-  }, [])
+  }, [router])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

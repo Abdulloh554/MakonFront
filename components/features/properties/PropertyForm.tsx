@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react'
 import dynamic from 'next/dynamic'
+import Image from 'next/image'
 import { motion } from 'framer-motion'
 import FormField from '@/components/ui/FormField'
 import { Map, Upload, X } from 'lucide-react'
@@ -262,10 +263,13 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
                 <div className="grid grid-cols-3 gap-2">
                   {form.imageFiles.map((file, i) => (
                     <div key={i} className="relative group">
-                      <img
+                      <Image
                         src={objectUrls[i] || ''}
                         alt=""
+                        width={200}
+                        height={96}
                         className="w-full h-24 object-cover rounded-lg"
+                        unoptimized
                       />
                       <button
                         type="button"

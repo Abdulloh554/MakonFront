@@ -14,7 +14,6 @@ const AUTH_KEYS = {
 
 export function useMe() {
   const setUser = useAuthStore((s) => s.setUser)
-  const setIsLoading = useAuthStore((s) => s.setLoading)
 
   return useQuery({
     queryKey: AUTH_KEYS.me,

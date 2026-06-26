@@ -27,7 +27,6 @@ export function useSocket() {
   useEffect(() => {
     if (!isAuthenticated) {
       disconnectSocket()
-      setConnected(false)
       return
     }
 
@@ -102,7 +101,6 @@ export function useSocket() {
       listenerCleanups.current = []
 
       disconnectSocket()
-      setConnected(false)
     }
   }, [isAuthenticated])
 

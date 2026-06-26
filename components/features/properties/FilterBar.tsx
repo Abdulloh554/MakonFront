@@ -47,7 +47,7 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
         setOpen(false)
       }
     }
-    setTimeout(() => document.addEventListener('click', handleClick), 0)
+    requestAnimationFrame(() => document.addEventListener('click', handleClick))
     return () => document.removeEventListener('click', handleClick)
   }, [open])
 
@@ -92,6 +92,8 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
         <motion.button
           whileTap={{ scale: 0.94 }}
           onClick={() => setOpen(!open)}
+          aria-label="Filtrlash"
+          aria-expanded={open}
           className={`relative p-2.5 rounded-xl transition-all duration-200 flex items-center gap-1.5 ${
             open || hasActiveFilters
               ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-200'
@@ -146,6 +148,8 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
                       key={t.value}
                       whileTap={{ scale: 0.93 }}
                       onClick={() => update('dealType', t.value)}
+                      role="checkbox"
+                      aria-checked={filters.dealType === t.value}
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
                         filters.dealType === t.value
                           ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md shadow-blue-200'

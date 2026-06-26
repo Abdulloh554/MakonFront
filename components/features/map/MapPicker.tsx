@@ -71,7 +71,7 @@ export default function MapPicker({
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [initialLat, initialLng]);
 
   function handleConfirm() {
     const pos = markerRef.current?.getLatLng();

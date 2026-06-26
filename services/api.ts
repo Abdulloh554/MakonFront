@@ -186,6 +186,26 @@ export const authApi = {
     clearCsrfToken()
   },
 
+  async google(idToken: string): Promise<{ user: User; csrfToken: string }> {
+    const data = await request<AuthResponse>(API_ROUTES.AUTH.GOOGLE, {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+      skipAuth: true,
+    })
+    setCsrfToken(data.csrfToken)
+    return data
+  },
+
+  async firebase(idToken: string): Promise<{ user: User; csrfToken: string }> {
+    const data = await request<AuthResponse>(API_ROUTES.AUTH.FIREBASE, {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+      skipAuth: true,
+    })
+    setCsrfToken(data.csrfToken)
+    return data
+  },
+
   async forgotPassword(phone: string): Promise<{ message: string }> {
     return request(API_ROUTES.AUTH.FORGOT_PASSWORD, {
       method: 'POST',

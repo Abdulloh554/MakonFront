@@ -1,224 +1,168 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
+import { authApi } from '@/services/api'
+import { auth, sendSignInLinkToEmail } from '@/lib/firebase'
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
+import { Mail } from 'lucide-react'
 
-export default function RegisterPage() {
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
+const ACTION_CODE_SETTINGS = {
+  url: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : '',
+  handleCodeInApp: true,
+}
+
+function RegisterInner() {
   const router = useRouter()
   const setUser = useAuthStore((s) => s.setUser)
-
-  const [step, setStep] = useState(1)
-  const [form, setForm] = useState({ name: '', lastName: '', email: '' })
-  const [code, setCode] = useState('')
+  const [name, setName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
-  const [savedCode, setSavedCode] = useState('')
-  const [showFallback, setShowFallback] = useState(false)
+  const [sent, setSent] = useState(false)
 
-  useEffect(() => {
-    if (step === 2) {
-      const timer = setTimeout(() => setShowFallback(true), 30000)
-      return () => clearTimeout(timer)
-    }
-    setShowFallback(false)
-  }, [step])
-
-  async function handleSubmitInfo(e) {
+  async function handleSendLink(e) {
     e.preventDefault()
     setError('')
     setLoading(true)
-
-    const res = await fetch('/api/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    })
-
-    const data = await res.json()
-
-    if (!res.ok) {
-      setError(data.error)
-      setLoading(false)
-      return
+    try {
+      window.localStorage.setItem('emailForSignIn', email)
+      window.localStorage.setItem('userNameForSignUp', name)
+      window.localStorage.setItem('userLastNameForSignUp', lastName)
+      await sendSignInLinkToEmail(auth, email, ACTION_CODE_SETTINGS)
+      setSent(true)
+    } catch (err) {
+      setError(err?.message || 'Xatolik yuz berdi')
     }
-
-    setEmail(form.email)
-    setSavedCode(data.code || '')
-    setMessage('6 xonali kod emailingizga yuborildi. Iltimos, pochtangizni tekshiring.')
-    setStep(2)
     setLoading(false)
   }
 
-  async function handleVerifyCode(e) {
-    e.preventDefault()
+  async function handleGoogleSuccess(credentialResponse) {
     setError('')
     setLoading(true)
-
-    const res = await fetch('/api/register/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, code }),
-    })
-
-    const data = await res.json()
-
-    if (!res.ok) {
-      setError(data.error)
-      setLoading(false)
-      return
+    try {
+      const idToken = credentialResponse.credential
+      const data = await authApi.google(idToken)
+      setUser(data.user)
+      router.push('/profile')
+    } catch (err) {
+      setError(err?.message || 'Google orqali ro\'yxatdan o\'tishda xatolik yuz berdi.')
     }
+    setLoading(false)
+  }
 
-    setUser({ ...data.user, firstName: data.user.name })
-    router.push('/profile')
+  if (sent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#f8fafc' }}>
+        <div className="w-full max-w-sm bg-white rounded-2xl p-6 text-center" style={{ boxShadow: '0 4px 24px rgba(15,23,42,0.08)' }}>
+          <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style={{ background: '#ecfdf5' }}>
+            <Mail className="w-5 h-5" style={{ color: '#059669' }} />
+          </div>
+          <h1 className="text-xl font-bold text-slate-900 mb-2">Havola yuborildi!</h1>
+          <p className="text-sm text-slate-500 mb-1">Elektron pochtangizga ro&apos;yxatdan o&apos;tish havolasi yuborildi.</p>
+          <p className="text-xs text-slate-400 mb-4">{email}</p>
+          <p className="text-xs text-slate-400">Havolani bossangiz, avtomatik tarzda ro&apos;yxatdan o&apos;tasiz.</p>
+          <button
+            onClick={() => { setSent(false) }}
+            className="mt-4 text-xs text-slate-400 hover:text-slate-600 transition-colors underline underline-offset-2"
+          >
+            Orqaga
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#f8fafc' }}>
       <div className="w-full max-w-sm bg-white rounded-2xl p-6" style={{ boxShadow: '0 4px 24px rgba(15,23,42,0.08)' }}>
         <div className="text-center mb-6">
-          <h1 className="text-xl font-bold text-slate-900">
-            {step === 1 ? "Ro'yxatdan o'tish" : 'Kodni tasdiqlash'}
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            {step === 1
-              ? "Makon platformasiga yangi hisob yarating"
-              : 'Emailingizga yuborilgan 6 xonali kodni kiriting'}
-          </p>
+          <h1 className="text-xl font-bold text-slate-900">Ro&apos;yxatdan o&apos;tish</h1>
+          <p className="text-xs text-slate-400 mt-1">Makon platformasiga yangi hisob yarating</p>
         </div>
 
-        {step === 1 && (
-          <form onSubmit={handleSubmitInfo} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Ismingiz</label>
-              <input
-                type="text"
-                required
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-400 transition-colors"
-                placeholder="Abdulloh"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Familiyangiz</label>
-              <input
-                type="text"
-                value={form.lastName}
-                onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-400 transition-colors"
-                placeholder="Aliyev"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Email</label>
-              <input
-                type="email"
-                required
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-400 transition-colors"
-                placeholder="example@gmail.com"
-              />
-            </div>
+        <form onSubmit={handleSendLink} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Ism</label>
+            <input
+              type="text"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-400 transition-colors"
+              placeholder="Abdulloh"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Familiya</label>
+            <input
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-400 transition-colors"
+              placeholder="Aliyev"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Email</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-400 transition-colors"
+              placeholder="example@gmail.com"
+            />
+          </div>
 
-            {error && (
-              <p className="text-xs text-red-500 font-medium text-center">{error}</p>
-            )}
+          {error && <p className="text-xs text-red-500 font-medium text-center">{error}</p>}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-50"
-              style={{
-                background: 'linear-gradient(135deg, #185FA5, #378ADD)',
-                boxShadow: '0 4px 12px rgba(24,95,165,0.25)',
-              }}
-            >
-              {loading ? 'Yuborilmoqda...' : "Ro'yxatdan o'tish"}
-            </button>
-          </form>
-        )}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg, #185FA5, #378ADD)', boxShadow: '0 4px 12px rgba(24,95,165,0.25)' }}
+          >
+            {loading ? 'Yuborilmoqda...' : 'Email orqali ro\'yxatdan o\'tish'}
+          </button>
+        </form>
 
-        {step === 2 && (
-          <form onSubmit={handleVerifyCode} className="space-y-4">
-            {message && (
-              <p className="text-xs text-green-600 font-medium text-center bg-green-50 rounded-xl px-3 py-2">
-                {message}
-              </p>
-            )}
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200" /></div>
+          <div className="relative flex justify-center"><span className="bg-white px-2 text-xs text-slate-400">yoki</span></div>
+        </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Emailga yuborilgan kod</label>
-              <input
-                type="text"
-                required
-                maxLength={6}
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-400 transition-colors text-center text-lg tracking-[8px] font-bold"
-                placeholder="000000"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-              />
-            </div>
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => setError('Google orqali ro\'yxatdan o\'tishda xatolik yuz berdi.')}
+            theme="outline"
+            size="large"
+            text="signup_with"
+            shape="rectangular"
+            width="300"
+          />
+        </div>
 
-            <p className="text-xs text-slate-400 text-center">
-              Kod <strong className="text-slate-600">{email}</strong> manziliga yuborildi
-            </p>
-
-            {error && (
-              <p className="text-xs text-red-500 font-medium text-center">{error}</p>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading || code.length < 6}
-              className="w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-50"
-              style={{
-                background: 'linear-gradient(135deg, #185FA5, #378ADD)',
-                boxShadow: '0 4px 12px rgba(24,95,165,0.25)',
-              }}
-            >
-              {loading ? 'Tekshirilmoqda...' : 'Tasdiqlash'}
-            </button>
-
-            {showFallback && savedCode && (
-              <div className="text-center space-y-1">
-                <p className="text-xs text-slate-400">Kod kelmadimi?</p>
-                <button
-                  type="button"
-                  onClick={() => setCode(savedCode)}
-                  className="text-xs font-semibold underline underline-offset-2"
-                  style={{ color: '#185FA5' }}
-                >
-                  Kodni avtomatik to'ldirish
-                </button>
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={() => { setStep(1); setError(''); setCode(''); setMessage('') }}
-              className="w-full text-xs text-slate-400 hover:text-slate-600 transition-colors underline underline-offset-2"
-            >
-              Orqaga
-            </button>
-          </form>
-        )}
-
-        {step === 1 && (
-          <p className="text-center text-xs text-slate-400 mt-4">
-            Hisobingiz bormi?{' '}
-            <Link href="/login" className="font-semibold" style={{ color: '#185FA5' }}>
-              Kirish
-            </Link>
-          </p>
-        )}
+        <p className="text-center text-xs text-slate-400 mt-4">
+          Hisobingiz bormi?{' '}
+          <Link href="/login" className="font-semibold" style={{ color: '#185FA5' }}>
+            Kirish
+          </Link>
+        </p>
       </div>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <RegisterInner />
+    </GoogleOAuthProvider>
   )
 }

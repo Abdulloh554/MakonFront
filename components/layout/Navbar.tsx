@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, MapPin, Users, PlusCircle, MessageCircle, User } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { getCurrentUser } from '@/store'
+import { useAuthStore } from '@/store/auth.store'
 import { useHydrated } from '@/hooks/useHydrated'
 
 const navItems = [
@@ -19,9 +19,10 @@ const navItems = [
 export default function Navbar() {
   const pathname = usePathname()
   const hydrated = useHydrated()
+  const user = useAuthStore((s) => s.user)
 
   if (pathname.startsWith('/admin')) return null
-  if (pathname === '/profile' && hydrated && !getCurrentUser()) return null
+  if (pathname === '/profile' && hydrated && !user) return null
 
   return (
     <>
@@ -53,6 +54,7 @@ export default function Navbar() {
                   <Link
                     key={item.href}
                     href={item.href}
+                    aria-label={item.label}
                     className="relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-2xl transition-all duration-200 min-w-0"
                   >
                     <AnimatePresence>

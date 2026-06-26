@@ -1,14 +1,15 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { getCurrentUser } from '@/store'
+import { useAuthStore } from '@/store/auth.store'
 import { useHydrated } from '@/hooks/useHydrated'
 
 export default function ContentWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const hydrated = useHydrated()
+  const user = useAuthStore((s) => s.user)
   const isAdmin = pathname.startsWith('/admin')
-  const isLoginPage = pathname === '/profile' && hydrated && !getCurrentUser()
+  const isLoginPage = pathname === '/profile' && hydrated && !user
 
   if (isAdmin || isLoginPage) {
     return (

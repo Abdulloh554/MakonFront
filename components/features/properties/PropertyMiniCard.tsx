@@ -1,8 +1,9 @@
 'use client'
 
 import type { Property } from '@/types'
+import Image from 'next/image'
 import { MapPin, Maximize, BedDouble } from 'lucide-react'
-import { PROPERTY_TYPE_LABELS, DEAL_TYPE_LABELS } from '@/constants'
+import { DEAL_TYPE_LABELS } from '@/constants'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 
@@ -48,12 +49,14 @@ export default function PropertyMiniCard({ property, onLocate, onClick }: Proper
         className="relative w-20 h-20 shrink-0 bg-slate-100 overflow-hidden"
         onClick={onClick}
       >
-        <img
+        <Image
           src={imgErr || !property.images[0] ? '/placeholder.svg' : property.images[0]}
           alt={property.title}
+          width={80}
+          height={80}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          loading="lazy"
           onError={() => setImgErr(true)}
+          unoptimized
         />
         <div
           className="absolute inset-0"

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, startTransition } from 'react'
+import { useState, useEffect, useCallback, startTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { apiAdminSellers, apiAdminDeleteSeller, isAdminLoggedIn } from '@/services/admin'
@@ -14,7 +14,7 @@ export default function AdminSellers() {
   const [totalPages, setTotalPages] = useState(0)
   const [loading, setLoading] = useState(true)
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
       const res = await apiAdminSellers(page, 20)
@@ -23,12 +23,12 @@ export default function AdminSellers() {
       setTotalPages(res.totalPages)
     } catch { router.replace('/admin') }
     setLoading(false)
-  }
+  }, [page, router])
 
   useEffect(() => {
     if (!isAdminLoggedIn()) { router.replace('/admin'); return }
     startTransition(() => load())
-  }, [page])
+  }, [load, router])
 
   async function handleDelete(id: string, name: string) {
     if (!confirm(`"${name}" — sotuvchini o'chirishni tasdiqlaysizmi?`)) return

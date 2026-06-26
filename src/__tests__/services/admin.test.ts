@@ -199,16 +199,18 @@ describe('apiAdminDeleteSeller', () => {
 describe('apiAdminMessages', () => {
   it('fetches paginated messages', async () => {
     mockFetch.mockResolvedValue(mockAdminResponse({ data: [{ id: 'msg-1' }], total: 1, page: 1, totalPages: 1 }))
-    const result = await apiAdminMessages()
+    const result: unknown = await apiAdminMessages()
     expect(mockFetch).toHaveBeenCalledWith('/api/v1/admin/messages?page=1&limit=20', expect.any(Object))
+    void result
   })
 })
 
 describe('apiAdminReviews', () => {
   it('fetches paginated reviews', async () => {
     mockFetch.mockResolvedValue(mockAdminResponse({ data: [{ id: 'rev-1' }], total: 1, page: 1, totalPages: 1 }))
-    const result = await apiAdminReviews()
+    const result: unknown = await apiAdminReviews()
     expect(mockFetch).toHaveBeenCalledWith('/api/v1/admin/reviews?page=1&limit=20', expect.any(Object))
+    void result
   })
 })
 
