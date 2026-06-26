@@ -166,7 +166,12 @@ export const authApi = {
     return data
   },
 
-  async register(firstName: string, lastName: string, phone: string, password: string): Promise<{ user: User; csrfToken: string }> {
+  async register(
+    firstName: string,
+    lastName: string,
+    phone: string,
+    password: string,
+  ): Promise<{ user: User; csrfToken: string }> {
     const data = await request<AuthResponse>(API_ROUTES.AUTH.REGISTER, {
       method: 'POST',
       body: JSON.stringify({ firstName, lastName, phone, password }),
@@ -248,10 +253,7 @@ export const propertyApi = {
     if (filters?.limit) params.set('limit', String(filters.limit))
 
     const qs = params.toString()
-    return request<Property[]>(
-      `${API_ROUTES.PROPERTIES.LIST}${qs ? `?${qs}` : ''}`,
-      { skipAuth: true },
-    )
+    return request<Property[]>(`${API_ROUTES.PROPERTIES.LIST}${qs ? `?${qs}` : ''}`, { skipAuth: true })
   },
 
   async detail(id: string): Promise<Property> {

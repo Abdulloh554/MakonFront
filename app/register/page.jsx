@@ -50,7 +50,7 @@ function RegisterInner() {
       setUser(data.user)
       router.push('/profile')
     } catch (err) {
-      setError(err?.message || 'Google orqali ro\'yxatdan o\'tishda xatolik yuz berdi.')
+      setError(err?.message || "Google orqali ro'yxatdan o'tishda xatolik yuz berdi.")
     }
     setLoading(false)
   }
@@ -58,16 +58,26 @@ function RegisterInner() {
   if (sent) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#f8fafc' }}>
-        <div className="w-full max-w-sm bg-white rounded-2xl p-6 text-center" style={{ boxShadow: '0 4px 24px rgba(15,23,42,0.08)' }}>
-          <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style={{ background: '#ecfdf5' }}>
+        <div
+          className="w-full max-w-sm bg-white rounded-2xl p-6 text-center"
+          style={{ boxShadow: '0 4px 24px rgba(15,23,42,0.08)' }}
+        >
+          <div
+            className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"
+            style={{ background: '#ecfdf5' }}
+          >
             <Mail className="w-5 h-5" style={{ color: '#059669' }} />
           </div>
           <h1 className="text-xl font-bold text-slate-900 mb-2">Havola yuborildi!</h1>
-          <p className="text-sm text-slate-500 mb-1">Elektron pochtangizga ro&apos;yxatdan o&apos;tish havolasi yuborildi.</p>
+          <p className="text-sm text-slate-500 mb-1">
+            Elektron pochtangizga ro&apos;yxatdan o&apos;tish havolasi yuborildi.
+          </p>
           <p className="text-xs text-slate-400 mb-4">{email}</p>
           <p className="text-xs text-slate-400">Havolani bossangiz, avtomatik tarzda ro&apos;yxatdan o&apos;tasiz.</p>
           <button
-            onClick={() => { setSent(false) }}
+            onClick={() => {
+              setSent(false)
+            }}
             className="mt-4 text-xs text-slate-400 hover:text-slate-600 transition-colors underline underline-offset-2"
           >
             Orqaga
@@ -125,21 +135,28 @@ function RegisterInner() {
             type="submit"
             disabled={loading}
             className="w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #185FA5, #378ADD)', boxShadow: '0 4px 12px rgba(24,95,165,0.25)' }}
+            style={{
+              background: 'linear-gradient(135deg, #185FA5, #378ADD)',
+              boxShadow: '0 4px 12px rgba(24,95,165,0.25)',
+            }}
           >
-            {loading ? 'Yuborilmoqda...' : 'Email orqali ro\'yxatdan o\'tish'}
+            {loading ? 'Yuborilmoqda...' : "Email orqali ro'yxatdan o'tish"}
           </button>
         </form>
 
         <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200" /></div>
-          <div className="relative flex justify-center"><span className="bg-white px-2 text-xs text-slate-400">yoki</span></div>
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200" />
+          </div>
+          <div className="relative flex justify-center">
+            <span className="bg-white px-2 text-xs text-slate-400">yoki</span>
+          </div>
         </div>
 
         <div className="flex justify-center">
           <GoogleLogin
             onSuccess={handleGoogleSuccess}
-            onError={() => setError('Google orqali ro\'yxatdan o\'tishda xatolik yuz berdi.')}
+            onError={() => setError("Google orqali ro'yxatdan o'tishda xatolik yuz berdi.")}
             theme="outline"
             size="large"
             text="signup_with"
