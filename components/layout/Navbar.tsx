@@ -112,8 +112,9 @@ export default function Navbar() {
           <motion.svg
             width="28" height="32" viewBox="0 0 120 132"
             xmlns="http://www.w3.org/2000/svg"
-            whileHover={{ scale: 1.12, rotate: -6 }}
-            transition={{ type: 'spring', stiffness: 300 }}
+            animate={{ y: [0, -4, 0] }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            whileHover={{ scale: 1.15, rotate: -8 }}
           >
             <defs>
               <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">

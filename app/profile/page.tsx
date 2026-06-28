@@ -87,7 +87,7 @@ export default function ProfilePage() {
               <UserIcon className="w-8 h-8 text-white" />
             </motion.div>
             <h1 className="text-xl font-bold text-gray-900">Profilingizga kiring</h1>
-            <p className="text-sm text-gray-500">Email orqali kirish yoki ro&apos;yxatdan o&apos;tish</p>
+            <p className="text-sm text-gray-500">Telefon raqam orqali kirish yoki ro&apos;yxatdan o&apos;tish</p>
             <div className="space-y-2.5 pt-2">
               <motion.a
                 whileHover={{ scale: 1.02 }}

@@ -182,8 +182,12 @@ export const authApi = {
     return data
   },
 
-  async me(): Promise<User> {
-    return request<User>(API_ROUTES.AUTH.ME, { skipAuth: true })
+  async me(): Promise<User | null> {
+    try {
+      return await request<User>(API_ROUTES.AUTH.ME, { skipAuth: true })
+    } catch {
+      return null
+    }
   },
 
   async logout(): Promise<void> {
@@ -205,6 +209,24 @@ export const authApi = {
     const data = await request<AuthResponse>(API_ROUTES.AUTH.FIREBASE, {
       method: 'POST',
       body: JSON.stringify({ idToken }),
+      skipAuth: true,
+    })
+    setCsrfToken(data.csrfToken)
+    return data
+  },
+
+  async sendOtp(email: string, firstName: string, lastName: string): Promise<{ message: string }> {
+    return request<{ message: string }>(API_ROUTES.AUTH.SEND_OTP, {
+      method: 'POST',
+      body: JSON.stringify({ email, firstName, lastName }),
+      skipAuth: true,
+    })
+  },
+
+  async verifyRegistration(email: string, otp: string): Promise<{ user: User; csrfToken: string }> {
+    const data = await request<AuthResponse>(API_ROUTES.AUTH.VERIFY_REGISTRATION, {
+      method: 'POST',
+      body: JSON.stringify({ email, otp }),
       skipAuth: true,
     })
     setCsrfToken(data.csrfToken)

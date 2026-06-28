@@ -107,16 +107,18 @@ describe('API request()', () => {
     )
   })
 
-  it('throws ApiClientError on non-ok response', async () => {
+  it('returns null on non-ok response', async () => {
     const { authApi } = await freshApi()
     mockFetch.mockResolvedValue(mockApiError('VALIDATION_ERROR', 'Invalid input'))
-    await expect(authApi.me()).rejects.toThrow('Invalid input')
+    const result = await authApi.me()
+    expect(result).toBeNull()
   })
 
-  it('throws ApiClientError on 500 with fallback message', async () => {
+  it('returns null on 500', async () => {
     const { authApi } = await freshApi()
     mockFetch.mockResolvedValue(mockErrorResponse())
-    await expect(authApi.me()).rejects.toThrow('Request failed with status 500')
+    const result = await authApi.me()
+    expect(result).toBeNull()
   })
 
   it('handles 204 no content', async () => {
@@ -126,10 +128,11 @@ describe('API request()', () => {
     expect(result).toBeUndefined()
   })
 
-  it('throws on unsuccessful response structure', async () => {
+  it('returns null on unsuccessful response structure', async () => {
     const { authApi } = await freshApi()
     mockFetch.mockResolvedValue(mockResponse(200, { success: false, error: { code: 'ERROR', message: 'Not successful' } }, true))
-    await expect(authApi.me()).rejects.toThrow('Not successful')
+    const result = await authApi.me()
+    expect(result).toBeNull()
   })
 })
 

@@ -17,7 +17,7 @@ import { useSocket } from "@/hooks/useSocket";
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { ArrowLeft, MessageSquare, Send, ChevronDown } from "lucide-react";
-import AuthPrompt from "@/components/features/auth/AuthPrompt";
+import AuthRequired from "@/components/features/auth/AuthRequired";
 import PageTransition from "@/components/layout/PageTransition";
 import PageHeader from "@/components/ui/PageHeader";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
@@ -318,7 +318,7 @@ function MessagesContent() {
   }
 
   if (showAuth) {
-    return <AuthPrompt onClose={() => router.back()} />;
+    return <AuthRequired />;
   }
 
   const showChat = !!conversationPartnerId || !!propertyId || !!sellerIdParam;

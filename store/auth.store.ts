@@ -77,7 +77,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true })
     try {
       const u = await authApi.me()
-      set({ user: u, isAuthenticated: true, isLoading: false })
+      if (u) {
+        set({ user: u, isAuthenticated: true, isLoading: false })
+      } else {
+        clearCsrfToken()
+        set({ user: null, csrfToken: null, isAuthenticated: false, isLoading: false })
+      }
     } catch {
       clearCsrfToken()
       set({ user: null, csrfToken: null, isAuthenticated: false, isLoading: false })

@@ -7,9 +7,9 @@
     <circle cx="60" cy="46" r="10" fill="#185FA5"/>
   </g>
 
-  <text x="172" y="90" font-family="system-ui,-apple-system,sans-serif" font-size="58" font-weight="700" letter-spacing="-1.5" fill="#0C2440">makon</text>
-  <circle cx="460" cy="78" r="6" fill="#378ADD"/>
-  <text x="174" y="118" font-family="system-ui,sans-serif" font-size="13" font-weight="400" letter-spacing="5" fill="#888780">KO'CHMAS MULK</text>
+  <text x="172" y="90" font-family="system-ui,-apple-system,sans-serif" font-size="58" font-weight="700" letter-spacing="-1.5" fill="#0C2440">MASKAN</text>
+  <circle cx="475" cy="78" r="6" fill="#378ADD"/>
+  <text x="174" y="118" font-family="system-ui,sans-serif" font-size="13" font-weight="400" letter-spacing="5" fill="#888780">KO'CHMAS MULK PLATFORMASI</text>
   <rect x="174" y="128" width="240" height="2" rx="1" fill="#378ADD"/>
 
   <line x1="40" y1="175" x2="640" y2="175" stroke="#E6F1FB" stroke-width="1"/>
@@ -46,8 +46,8 @@
     <circle cx="60" cy="46" r="10" fill="#378ADD"/>
   </g>
 
-  <text x="110" y="344" font-family="system-ui,-apple-system,sans-serif" font-size="28" font-weight="700" letter-spacing="-0.5" fill="#FFFFFF">makon</text>
-  <circle cx="235" cy="338" r="3.5" fill="#378ADD"/>
-  <text x="248" y="344" font-family="system-ui,sans-serif" font-size="11" font-weight="400" letter-spacing="4" fill="#85B7EB">KO'CHMAS MULK</text>
+  <text x="110" y="344" font-family="system-ui,-apple-system,sans-serif" font-size="28" font-weight="700" letter-spacing="-0.5" fill="#FFFFFF">MASKAN</text>
+  <circle cx="240" cy="338" r="3.5" fill="#378ADD"/>
+  <text x="253" y="344" font-family="system-ui,sans-serif" font-size="11" font-weight="400" letter-spacing="4" fill="#85B7EB">KO'CHMAS MULK PLATFORMASI</text>
 
 </svg>

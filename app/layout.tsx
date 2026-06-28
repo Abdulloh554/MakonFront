@@ -22,7 +22,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "Makon — Ko'chmas mulk platformasi",
+    default: "Maskan — Ko'chmas mulk platformasi",
     template: "%s | Makon",
   },
   description: "Toshkent va atrofdagi uylar, kvartiralar, kottejlar va yerlarni toping. Makon — O'zbekistondagi eng qulay ko'chmas mulk platformasi.",
