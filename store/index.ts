@@ -3,7 +3,7 @@
 import type { Property, User, Message } from '../types'
 import type { Seller, Review, FilterOptions } from '../types'
 import { propertyApi, messageApi, sellerApi } from '../services/api'
-import { normalizePhone, isValidUzbekPhone } from '../utils/phone'
+import { normalizePhone } from '../utils/phone'
 import { useAuthStore } from './auth.store'
 
 let _properties: Property[] = []
@@ -24,20 +24,15 @@ export function isAuthenticated(): boolean {
   return useAuthStore.getState().isAuthenticated
 }
 
-export async function login(phone: string, password: string): Promise<User> {
-  const normalized = normalizePhone(phone)
+export async function login(email: string, password: string): Promise<User> {
   const store = useAuthStore.getState()
-  await store.login(normalized, password)
+  await store.login(email, password)
   return store.user!
 }
 
-export async function register(firstName: string, lastName: string, phone: string, password: string): Promise<User> {
-  const normalized = normalizePhone(phone)
-  if (!isValidUzbekPhone(normalized)) {
-    throw new Error("Noto'g'ri O'zbekiston telefon raqami")
-  }
+export async function register(firstName: string, lastName: string, email: string, password: string): Promise<User> {
   const store = useAuthStore.getState()
-  await store.register(firstName, lastName, normalized, password)
+  await store.register(firstName, lastName, email, password)
   return store.user!
 }
 

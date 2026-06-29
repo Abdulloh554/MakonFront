@@ -155,10 +155,10 @@ async function request<T>(
 // ─── Auth API ──────────────────────────────────────────────────────────
 
 export const authApi = {
-  async login(phone: string, password: string): Promise<{ user: User; csrfToken: string }> {
+  async login(email: string, password: string): Promise<{ user: User; csrfToken: string }> {
     const data = await request<AuthResponse>(API_ROUTES.AUTH.LOGIN, {
       method: 'POST',
-      body: JSON.stringify({ phone, password }),
+      body: JSON.stringify({ email, password }),
       skipAuth: true,
     })
 
@@ -169,12 +169,12 @@ export const authApi = {
   async register(
     firstName: string,
     lastName: string,
-    phone: string,
+    email: string,
     password: string,
   ): Promise<{ user: User; csrfToken: string }> {
     const data = await request<AuthResponse>(API_ROUTES.AUTH.REGISTER, {
       method: 'POST',
-      body: JSON.stringify({ firstName, lastName, phone, password }),
+      body: JSON.stringify({ firstName, lastName, email, password }),
       skipAuth: true,
     })
 
@@ -233,10 +233,10 @@ export const authApi = {
     return data
   },
 
-  async forgotPassword(phone: string): Promise<{ message: string }> {
+  async forgotPassword(email: string): Promise<{ message: string }> {
     return request(API_ROUTES.AUTH.FORGOT_PASSWORD, {
       method: 'POST',
-      body: JSON.stringify({ phone }),
+      body: JSON.stringify({ email }),
       skipAuth: true,
     })
   },

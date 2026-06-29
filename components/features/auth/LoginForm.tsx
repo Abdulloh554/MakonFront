@@ -5,11 +5,6 @@ import { UserIcon, Eye, EyeOff, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import type { User } from "@/types";
-import {
-  normalizePhone,
-  isValidUzbekPhone,
-  formatLocalPhone,
-} from "@/utils/phone";
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
@@ -17,8 +12,8 @@ const inputClasses =
   "w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none";
 
 interface LoginFormProps {
-  onLogin: (name: string, lastName: string, phone: string, password: string) => Promise<User>;
-  onRegister: (name: string, lastName: string, phone: string, password: string) => Promise<User>;
+  onLogin: (name: string, lastName: string, email: string, password: string) => Promise<User>;
+  onRegister: (name: string, lastName: string, email: string, password: string) => Promise<User>;
   onGoogleLogin?: (idToken: string) => Promise<void>;
 }
 
@@ -26,7 +21,7 @@ function LoginFormInner({ onLogin, onRegister, onGoogleLogin }: LoginFormProps) 
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agreeToTerms, setAgreeToTerms] = useState(false);
@@ -35,18 +30,9 @@ function LoginFormInner({ onLogin, onRegister, onGoogleLogin }: LoginFormProps) 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handlePhoneChange = useCallback(
+  const handleEmailChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const digits = e.target.value.replace(/\D/g, "");
-      let rest = digits;
-
-      if (digits.length === 12 && digits.startsWith("998")) {
-        rest = digits.slice(3);
-      } else if (digits.length === 11 && digits.startsWith("8")) {
-        rest = digits.slice(1);
-      }
-
-      setPhone(rest.slice(0, 9));
+      setEmail(e.target.value);
       setError("");
     },
     [],
@@ -56,13 +42,12 @@ function LoginFormInner({ onLogin, onRegister, onGoogleLogin }: LoginFormProps) 
     setError("");
 
     if (mode === "login") {
-      const normalized = normalizePhone(phone);
-      if (!normalized) {
-        setError("Telefon raqamingizni kiriting");
+      if (!email.trim()) {
+        setError("Emailingizni kiriting");
         return;
       }
-      if (!isValidUzbekPhone(normalized)) {
-        setError("Noto'g'ri O'zbekiston telefon raqami");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        setError("Noto'g'ri email format");
         return;
       }
       if (!password) {
@@ -71,7 +56,7 @@ function LoginFormInner({ onLogin, onRegister, onGoogleLogin }: LoginFormProps) 
       }
       setLoading(true);
       try {
-        await onLogin("", "", normalized, password);
+        await onLogin("", "", email.trim(), password);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Kirish xatosi");
       } finally {
@@ -90,13 +75,12 @@ function LoginFormInner({ onLogin, onRegister, onGoogleLogin }: LoginFormProps) 
       return;
     }
 
-    const normalized = normalizePhone(phone);
-    if (!normalized) {
-      setError("Telefon raqamingizni kiriting");
+    if (!email.trim()) {
+      setError("Emailingizni kiriting");
       return;
     }
-    if (!isValidUzbekPhone(normalized)) {
-      setError("Noto'g'ri O'zbekiston telefon raqami");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError("Noto'g'ri email format");
       return;
     }
 
@@ -122,7 +106,7 @@ function LoginFormInner({ onLogin, onRegister, onGoogleLogin }: LoginFormProps) 
 
     setLoading(true);
     try {
-      await onRegister(name.trim(), lastName.trim(), normalized, password);
+      await onRegister(name.trim(), lastName.trim(), email.trim(), password);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ro'yxatdan o'tishda xatolik")
     } finally {
@@ -317,19 +301,11 @@ function LoginFormInner({ onLogin, onRegister, onGoogleLogin }: LoginFormProps) 
           </AnimatePresence>
 
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Telefon raqamingiz</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">Emailingiz</label>
             <div className="relative">
-              <motion.span
-                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-500"
-                initial={{ opacity: 0, x: -5 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.6 }}
-              >
-                +998
-              </motion.span>
               <motion.div whileFocus={{ scale: 1.01 }}>
-                <input type="tel" placeholder="99 999 99 99" value={formatLocalPhone(phone)} onChange={handlePhoneChange}
-                  className={`${inputClasses} pl-16`}
+                <input type="email" placeholder="email@example.com" value={email} onChange={handleEmailChange}
+                  className={inputClasses}
                 />
               </motion.div>
             </div>
@@ -438,7 +414,7 @@ function LoginFormInner({ onLogin, onRegister, onGoogleLogin }: LoginFormProps) 
             onClick={handleSubmit}
             disabled={
               loading ||
-              !normalizePhone(phone) ||
+              !email.trim() ||
               !password ||
               (mode === "register" && (!name.trim() || !lastName.trim() || !confirmPassword || !agreeToTerms))
             }

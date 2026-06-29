@@ -7,11 +7,6 @@ import { authApi } from '@/services/api'
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
 import { UserIcon, Eye, EyeOff, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  normalizePhone,
-  isValidUzbekPhone,
-  formatLocalPhone,
-} from '@/utils/phone'
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
 
@@ -26,7 +21,7 @@ function LoginInner() {
   const [mode, setMode] = useState('login')
   const [name, setName] = useState('')
   const [lastName, setLastName] = useState('')
-  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [agreeToTerms, setAgreeToTerms] = useState(false)
@@ -35,12 +30,8 @@ function LoginInner() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const handlePhoneChange = useCallback((e) => {
-    const digits = e.target.value.replace(/\D/g, '')
-    let rest = digits
-    if (digits.length === 12 && digits.startsWith('998')) rest = digits.slice(3)
-    else if (digits.length === 11 && digits.startsWith('8')) rest = digits.slice(1)
-    setPhone(rest.slice(0, 9))
+  const handleEmailChange = useCallback((e) => {
+    setEmail(e.target.value)
     setError('')
   }, [])
 
@@ -60,15 +51,13 @@ function LoginInner() {
   async function handleSubmit() {
     setError('')
 
-    const normalized = normalizePhone(phone)
-
     if (mode === 'login') {
-      if (!normalized) { setError('Telefon raqamingizni kiriting'); return }
-      if (!isValidUzbekPhone(normalized)) { setError("Noto'g'ri O'zbekiston telefon raqami"); return }
+      if (!email.trim()) { setError('Emailingizni kiriting'); return }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("Noto'g'ri email format"); return }
       if (!password) { setError('Parolni kiriting'); return }
       setLoading(true)
       try {
-        await login('', '', normalized, password)
+        await login('', '', email.trim(), password)
         router.push('/profile')
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Kirish xatosi')
@@ -78,8 +67,8 @@ function LoginInner() {
 
     if (!name.trim()) { setError('Ismingizni kiriting'); return }
     if (!lastName.trim()) { setError('Familiyangizni kiriting'); return }
-    if (!normalized) { setError('Telefon raqamingizni kiriting'); return }
-    if (!isValidUzbekPhone(normalized)) { setError("Noto'g'ri O'zbekiston telefon raqami"); return }
+    if (!email.trim()) { setError('Emailingizni kiriting'); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("Noto'g'ri email format"); return }
     if (!password) { setError('Parolni kiriting'); return }
     if (password.length < 8) { setError('Parol kamida 8 belgidan iborat bo\'lishi kerak'); return }
     if (password !== confirmPassword) { setError('Parollar mos kelmadi'); return }
@@ -87,7 +76,7 @@ function LoginInner() {
 
     setLoading(true)
     try {
-      await register(name.trim(), lastName.trim(), normalized, password)
+      await register(name.trim(), lastName.trim(), email.trim(), password)
       router.push('/profile')
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ro'yxatdan o'tishda xatolik")
@@ -184,7 +173,7 @@ function LoginInner() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.45, duration: 0.35 }}
               >
-                {mode === 'login' ? "Telefon raqam orqali kiring" : "Telefon raqam orqali ro'yxatdan o'ting"}
+                {mode === 'login' ? "Email orqali kiring" : "Email orqali ro'yxatdan o'ting"}
               </motion.p>
             </motion.div>
           </AnimatePresence>
@@ -308,25 +297,17 @@ function LoginInner() {
             )}
           </AnimatePresence>
 
-          {/* Phone field */}
+          {/* Email field */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Telefon raqamingiz</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">Emailingiz</label>
             <div className="relative">
-              <motion.span
-                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-500 z-10"
-                initial={{ opacity: 0, x: -5 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.6 }}
-              >
-                +998
-              </motion.span>
               <motion.div whileFocus={{ scale: 1.01 }}>
-                <input type="tel" placeholder="99 123 45 67" value={formatLocalPhone(phone)} onChange={handlePhoneChange}
-                  className={`${inputClasses} pl-16`}
+                <input type="email" placeholder="email@example.com" value={email} onChange={handleEmailChange}
+                  className={inputClasses}
                 />
               </motion.div>
             </div>
@@ -442,7 +423,7 @@ function LoginInner() {
             whileHover={{ scale: 1.01, boxShadow: '0 8px 25px rgba(24, 95, 165, 0.35)' }}
             whileTap={{ scale: 0.98 }}
             onClick={handleSubmit}
-            disabled={loading || !normalizePhone(phone) || !password || (mode === 'register' && (!name.trim() || !lastName.trim() || !confirmPassword || !agreeToTerms))}
+            disabled={loading || !email.trim() || !password || (mode === 'register' && (!name.trim() || !lastName.trim() || !confirmPassword || !agreeToTerms))}
             className="relative w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-sm hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all shadow-lg shadow-blue-200 flex items-center justify-center overflow-hidden"
           >
             <motion.span

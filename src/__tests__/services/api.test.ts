@@ -212,10 +212,10 @@ describe('authApi', () => {
   it('login calls correct endpoint with body', async () => {
     const { authApi, getCsrfToken } = await freshApi()
     mockFetch.mockResolvedValue(mockApiResponse({ user: { id: '1' }, csrfToken: 'csrf-1' }))
-    const result = await authApi.login('+998901234567', 'mypass')
+    const result = await authApi.login('john@example.com', 'mypass')
     expect(mockFetch).toHaveBeenCalledWith(
       '/api/v1/auth/login',
-      expect.objectContaining({ method: 'POST', body: JSON.stringify({ phone: '+998901234567', password: 'mypass' }) }),
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ email: 'john@example.com', password: 'mypass' }) }),
     )
     expect(result.user.id).toBe('1')
     expect(result.csrfToken).toBe('csrf-1')
@@ -225,10 +225,10 @@ describe('authApi', () => {
   it('register calls correct endpoint', async () => {
     const { authApi } = await freshApi()
     mockFetch.mockResolvedValue(mockApiResponse({ user: { id: '2' }, csrfToken: 'csrf-2' }))
-    const result = await authApi.register('Jane', 'Doe', '+998901234567', 'pass')
+    const result = await authApi.register('Jane', 'Doe', 'jane@example.com', 'pass')
     expect(mockFetch).toHaveBeenCalledWith(
       '/api/v1/auth/register',
-      expect.objectContaining({ method: 'POST', body: JSON.stringify({ firstName: 'Jane', lastName: 'Doe', phone: '+998901234567', password: 'pass' }) }),
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ firstName: 'Jane', lastName: 'Doe', email: 'jane@example.com', password: 'pass' }) }),
     )
     expect(result.user.id).toBe('2')
   })
@@ -251,7 +251,7 @@ describe('authApi', () => {
   it('forgotPassword sends correct payload', async () => {
     const { authApi } = await freshApi()
     mockFetch.mockResolvedValue(mockApiResponse({ message: 'Sent' }))
-    const result = await authApi.forgotPassword('+998901234567')
+    const result = await authApi.forgotPassword('john@example.com')
     expect(mockFetch).toHaveBeenCalledWith('/api/v1/auth/forgot-password', expect.objectContaining({ method: 'POST' }))
     expect(result.message).toBe('Sent')
   })

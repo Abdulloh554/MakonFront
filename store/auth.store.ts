@@ -17,8 +17,8 @@ interface AuthState {
   setUser: (user: User | null) => void
   setCsrfToken: (token: string | null) => void
 
-  login: (phone: string, password: string) => Promise<void>
-  register: (firstName: string, lastName: string, phone: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<void>
+  register: (firstName: string, lastName: string, email: string, password: string) => Promise<void>
   logout: () => Promise<void>
   restoreSession: () => Promise<void>
   setLoading: (loading: boolean) => void
@@ -41,10 +41,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ csrfToken: token })
   },
 
-  login: async (phone, password) => {
+  login: async (email, password) => {
     set({ isLoading: true })
     try {
-      const { user, csrfToken } = await authApi.login(phone, password)
+      const { user, csrfToken } = await authApi.login(email, password)
       setCsrfToken(csrfToken)
       set({ user, isAuthenticated: true, isLoading: false })
     } finally {
@@ -52,10 +52,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  register: async (firstName, lastName, phone, password) => {
+  register: async (firstName, lastName, email, password) => {
     set({ isLoading: true })
     try {
-      const { user, csrfToken } = await authApi.register(firstName, lastName, phone, password)
+      const { user, csrfToken } = await authApi.register(firstName, lastName, email, password)
       setCsrfToken(csrfToken)
       set({ user, isAuthenticated: true, isLoading: false })
     } finally {

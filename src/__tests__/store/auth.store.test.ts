@@ -80,9 +80,9 @@ describe('auth.store', () => {
     const mockLoginResponse = { user: mockUser, csrfToken: 'csrf-123' }
     vi.mocked(authApi.login).mockResolvedValue(mockLoginResponse)
 
-    await useAuthStore.getState().login('+998901234567', 'password')
+    await useAuthStore.getState().login('john@example.com', 'password')
 
-    expect(authApi.login).toHaveBeenCalledWith('+998901234567', 'password')
+    expect(authApi.login).toHaveBeenCalledWith('john@example.com', 'password')
     expect(setCsrfToken).toHaveBeenCalledWith('csrf-123')
     const state = useAuthStore.getState()
     expect(state.user).toEqual(mockUser)
@@ -94,9 +94,9 @@ describe('auth.store', () => {
     const mockRegisterResponse = { user: mockUser, csrfToken: 'csrf-456' }
     vi.mocked(authApi.register).mockResolvedValue(mockRegisterResponse)
 
-    await useAuthStore.getState().register('John', 'Doe', '+998901234567', 'password')
+    await useAuthStore.getState().register('John', 'Doe', 'john@example.com', 'password')
 
-    expect(authApi.register).toHaveBeenCalledWith('John', 'Doe', '+998901234567', 'password')
+    expect(authApi.register).toHaveBeenCalledWith('John', 'Doe', 'john@example.com', 'password')
     expect(setCsrfToken).toHaveBeenCalledWith('csrf-456')
     const state = useAuthStore.getState()
     expect(state.user).toEqual(mockUser)

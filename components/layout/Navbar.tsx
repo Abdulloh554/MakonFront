@@ -22,6 +22,7 @@ export default function Navbar() {
   const user = useAuthStore((s) => s.user)
 
   if (pathname.startsWith('/admin')) return null
+  if (pathname === '/login' || pathname === '/register') return null
   if (pathname === '/profile' && hydrated && !user) return null
 
   return (
