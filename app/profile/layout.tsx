@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Profil — Makon',
+  title: 'Profil — Maskan',
   description: 'Shaxsiy profilingizni boshqaring va elonlaringizni ko\'ring.',
 }
 

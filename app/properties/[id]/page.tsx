@@ -27,10 +27,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const property = await fetchProperty(id)
   if (!property) {
-    return { title: 'Elon topilmadi — Makon' }
+    return { title: 'Elon topilmadi — Maskan' }
   }
   return {
-    title: `${property.title} — Makon`,
+    title: `${property.title} — Maskan`,
     description: property.description.slice(0, 160),
     openGraph: {
       title: property.title,

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Xabarlar — Makon',
+  title: 'Xabarlar — Maskan',
   description: 'Sotuvchilar bilan xabar almashing va ko\'chmas mulk haqida savol bering.',
 }
 

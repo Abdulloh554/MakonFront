@@ -23,24 +23,24 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: {
     default: "Maskan — Ko'chmas mulk platformasi",
-    template: "%s | Makon",
+    template: "%s | Maskan",
   },
-  description: "Toshkent va atrofdagi uylar, kvartiralar, kottejlar va yerlarni toping. Makon — O'zbekistondagi eng qulay ko'chmas mulk platformasi.",
-  keywords: ["uy sotish", "kvartira ijarasi", "ko'chmas mulk", "Toshkent", "Makon", "O'zbekiston"],
+  description: "Toshkent va atrofdagi uylar, kvartiralar, kottejlar va yerlarni toping. Maskan — O'zbekistondagi eng qulay ko'chmas mulk platformasi.",
+  keywords: ["uy sotish", "kvartira ijarasi", "ko'chmas mulk", "Toshkent", "Maskan", "O'zbekiston"],
   icons: {
     icon: "/favicon.ico",
   },
   openGraph: {
-    title: "Makon — Ko'chmas mulk platformasi",
+    title: "Maskan — Ko'chmas mulk platformasi",
     description: "Toshkent va atrofdagi uylar, kvartiralar, kottejlar va yerlarni toping.",
     url: process.env.NEXT_PUBLIC_SITE_URL || 'https://makon.uz',
-    siteName: "Makon",
+    siteName: "Maskan",
     locale: "uz_UZ",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Makon — Ko'chmas mulk platformasi",
+    title: "Maskan — Ko'chmas mulk platformasi",
     description: "Toshkent va atrofdagi uylar, kvartiralar, kottejlar va yerlarni toping.",
   },
   robots: {
