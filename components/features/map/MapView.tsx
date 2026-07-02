@@ -7,6 +7,7 @@ import { Crosshair } from 'lucide-react'
 import type { Property } from '@/types'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/ui/ToastProvider'
+import { useI18n } from '@/lib/i18n/I18nContext'
 
 const defaultCenter: [number, number] = [41.3111, 69.2797]
 
@@ -61,6 +62,7 @@ function createUserIcon(): L.DivIcon {
 
 const MapView = forwardRef<MapViewHandle, MapViewProps>(function MapView({ properties, onMarkerClick }, ref) {
   const { showToast } = useToast()
+  const { t } = useI18n()
   const mapRef = useRef<L.Map | null>(null)
   const markersRef = useRef<Map<string, L.Marker>>(new Map())
   const userMarkerRef = useRef<L.Marker | null>(null)
@@ -72,6 +74,9 @@ const MapView = forwardRef<MapViewHandle, MapViewProps>(function MapView({ prope
   const [showNearby, setShowNearby] = useState(false)
   const [loading, setLoading] = useState(false)
   const [nearbyIds, setNearbyIds] = useState<Set<string>>(new Set())
+  const [zoom, setZoom] = useState(12)
+
+  const MIN_ZOOM_FOR_MARKERS = 15
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
@@ -86,6 +91,10 @@ const MapView = forwardRef<MapViewHandle, MapViewProps>(function MapView({ prope
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
     }).addTo(map)
+
+    map.on('zoomend', () => {
+      setZoom(map.getZoom())
+    })
 
     mapRef.current = map
     setTimeout(() => map.invalidateSize(), 100)
@@ -109,10 +118,12 @@ const MapView = forwardRef<MapViewHandle, MapViewProps>(function MapView({ prope
     const map = mapRef.current
     const markers = markersRef.current
 
-    const displayed =
-      showNearby && userLocation
+    const zoomOk = zoom >= MIN_ZOOM_FOR_MARKERS
+    const displayed = zoomOk
+      ? showNearby && userLocation
         ? properties.filter((p) => nearbyIds.has(p.id))
         : properties
+      : []
 
     const displayedIds = new Set(displayed.map((p) => p.id))
     for (const [id, marker] of markers.entries()) {
@@ -160,7 +171,7 @@ const MapView = forwardRef<MapViewHandle, MapViewProps>(function MapView({ prope
       if (isActive) marker.setZIndexOffset(1000)
       markers.set(p.id, marker)
     }
-  }, [properties, showNearby, userLocation, nearbyIds, selectedId, onMarkerClick])
+  }, [properties, showNearby, userLocation, nearbyIds, selectedId, onMarkerClick, zoom])
 
   function findNearby() {
     if (showNearby) {
@@ -187,13 +198,13 @@ const MapView = forwardRef<MapViewHandle, MapViewProps>(function MapView({ prope
           setLoading(false)
         },
         () => {
-          showToast('Geolokatsiya yoqilmagan yoki mavjud emas', 'error')
+          showToast(t('map_view.location_error'), 'error')
           setLoading(false)
         },
         { enableHighAccuracy: true },
       )
     } else {
-      showToast("Brauzeringiz geolokatsiyani qo'llab-quvvatlamaydi", 'error')
+      showToast(t('map_view.location_not_supported'), 'error')
       setLoading(false)
     }
   }
@@ -243,9 +254,9 @@ const MapView = forwardRef<MapViewHandle, MapViewProps>(function MapView({ prope
         }
 
         .map-price-badge {
-          background: rgba(255,255,255,0.97);
+          background: var(--glass-panel-bg);
           backdrop-filter: blur(10px);
-          color: #0f172a;
+          color: var(--gray-900);
           font-family: 'Inter', system-ui, sans-serif;
           font-size: 12.5px;
           font-weight: 800;
@@ -254,7 +265,7 @@ const MapView = forwardRef<MapViewHandle, MapViewProps>(function MapView({ prope
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 1.5px solid #e2e8f0;
+          border: 1.5px solid var(--gray-200);
           border-radius: 9999px;
           box-sizing: border-box;
           box-shadow:
@@ -319,7 +330,7 @@ const MapView = forwardRef<MapViewHandle, MapViewProps>(function MapView({ prope
             className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}
             style={{ color: showNearby ? 'white' : '#185FA5' }}
           />
-          {loading ? 'Topilmoqda...' : showNearby ? 'Yaqin elonlar' : 'Menga yaqin'}
+          {loading ? t('map_view.searching') : showNearby ? t('map_view.nearby_active') : t('map_view.nearby_button')}
         </motion.button>
       </div>
 
@@ -343,7 +354,7 @@ const MapView = forwardRef<MapViewHandle, MapViewProps>(function MapView({ prope
               className="w-2 h-2 rounded-full"
               style={{ background: '#34d399', boxShadow: '0 0 0 3px rgba(52,211,153,0.2)' }}
             />
-            Joylashuv aniqlandi
+            {t('map_view.location_found')}
           </motion.div>
         )}
       </AnimatePresence>

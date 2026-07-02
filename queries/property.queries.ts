@@ -96,6 +96,14 @@ export function useDeleteProperty() {
   })
 }
 
+export function useFeaturedProperties() {
+  return useQuery({
+    queryKey: ['properties', 'featured'],
+    queryFn: () => propertyApi.featured(),
+    staleTime: 1000 * 60 * 2,
+  })
+}
+
 export function useMyProperties() {
   return useQuery({
     queryKey: PROPERTY_KEYS.mine,

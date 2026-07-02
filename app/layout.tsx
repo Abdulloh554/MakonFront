@@ -1,11 +1,16 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/layout/Navbar";
-import ContentWrapper from "@/components/layout/ContentWrapper";
-import ToastProvider from "@/components/ui/ToastProvider";
-import SplashScreen from "@/components/layout/SplashScreen";
-import ClientProviders from "@/components/layout/ClientProviders";
+import AppShell from "@/components/layout/AppShell";
+import { Providers } from "./providers";
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-inter",
+  display: "swap",
+  preload: true,
+});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -13,20 +18,12 @@ export const viewport: Viewport = {
   themeColor: "#185FA5",
 };
 
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
 export const metadata: Metadata = {
   title: {
     default: "Maskan — Ko'chmas mulk platformasi",
     template: "%s | Maskan",
   },
   description: "Toshkent va atrofdagi uylar, kvartiralar, kottejlar va yerlarni toping. Maskan — O'zbekistondagi eng qulay ko'chmas mulk platformasi.",
-  keywords: ["uy sotish", "kvartira ijarasi", "ko'chmas mulk", "Toshkent", "Maskan", "O'zbekiston"],
   icons: {
     icon: "/favicon.ico",
   },
@@ -38,15 +35,6 @@ export const metadata: Metadata = {
     locale: "uz_UZ",
     type: "website",
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "Maskan — Ko'chmas mulk platformasi",
-    description: "Toshkent va atrofdagi uylar, kvartiralar, kottejlar va yerlarni toping.",
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
 };
 
 export default function RootLayout({
@@ -55,21 +43,55 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="uz" className={`${inter.variable} antialiased`}>
+    <html lang="uz" className={`${inter.variable} antialiased`} suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://accounts.google.com" />
+        <link rel="dns-prefetch" href="https://accounts.google.com" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var t=localStorage.getItem('makon-theme');var isDark=t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches);if(isDark)document.documentElement.classList.add('dark');document.documentElement.setAttribute('data-theme',isDark?'dark':'light')})()`,
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "RealEstateAgent",
+              name: "Maskan",
+              url: process.env.NEXT_PUBLIC_SITE_URL || "https://makon.uz",
+              logo: `${process.env.NEXT_PUBLIC_SITE_URL || "https://makon.uz"}/maskan-logo.jpg`,
+              description: "O'zbekistondagi eng qulay ko'chmas mulk platformasi",
+              areaServed: "UZ",
+              availableLanguage: ["uz", "ru"],
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "Maskan",
+              url: process.env.NEXT_PUBLIC_SITE_URL || "https://makon.uz",
+              potentialAction: {
+                "@type": "SearchAction",
+                target: {
+                  "@type": "EntryPoint",
+                  urlTemplate: `${process.env.NEXT_PUBLIC_SITE_URL || "https://makon.uz"}/?search={search_term_string}`,
+                },
+                "query-input": "required name=search_term_string",
+              },
+            }),
+          }}
+        />
+      </head>
       <body
         className="min-h-dvh"
         style={{ background: "var(--gray-50)", fontFamily: "var(--font-inter), system-ui, sans-serif" }}
       >
-        <ClientProviders>
-        <ToastProvider>
-        <SplashScreen>
-          <Navbar />
-          <ContentWrapper>
-            {children}
-          </ContentWrapper>
-        </SplashScreen>
-        </ToastProvider>
-        </ClientProviders>
+        <Providers><AppShell>{children}</AppShell></Providers>
       </body>
     </html>
   );

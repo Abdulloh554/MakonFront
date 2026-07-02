@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useI18n } from '@/lib/i18n/I18nContext'
 import { PlusCircle } from 'lucide-react'
 import { getCurrentUser, addProperty } from '@/store'
 import { useHydrated } from '@/hooks/useHydrated'
@@ -15,6 +16,7 @@ import type { PropertyType, DealType, PropertyStatus } from '@/types'
 
 export default function AddPage() {
   const router = useRouter()
+  const { t } = useI18n()
   const [saving, setSaving] = useState(false)
   const hydrated = useHydrated()
   const user = hydrated ? getCurrentUser() : null
@@ -96,8 +98,8 @@ export default function AddPage() {
   return (
     <PageTransition>
       <PageHeader
-        title="Elon qo'shish"
-        subtitle="Yangi ko'chmas mulk e'loni"
+        title={t('property_form.submit')}
+        subtitle=""
         icon={
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center shadow-sm">
             <PlusCircle className="w-4 h-4 text-white" />

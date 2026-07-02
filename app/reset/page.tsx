@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useI18n } from '@/lib/i18n/I18nContext'
 
 export default function ResetPage() {
   const router = useRouter()
-  const [status, setStatus] = useState('Ma\'lumotlar o\'chirilmoqda...')
+  const { t } = useI18n()
+  const [status, setStatus] = useState(t('common.loading'))
   const [done, setDone] = useState(false)
 
   useEffect(() => {
@@ -18,7 +20,7 @@ export default function ResetPage() {
         localStorage.clear()
       }
 
-      setStatus('Barcha ma\'lumotlar o\'chirildi!')
+      setStatus(t('reset.success'))
       setDone(true)
     }
     reset()
@@ -47,7 +49,7 @@ export default function ResetPage() {
           fontSize: '16px',
         }}
       >
-        Bosh sahifaga qaytish
+        {t('not_found.home')}
       </button>
     </div>
   )

@@ -6,21 +6,23 @@ import { Users, Building2, Store, MessageSquare, Star, Eye, TrendingUp, Search }
 import { apiAdminStats, isAdminLoggedIn, type AdminStats } from '@/services/admin'
 import { useRouter } from 'next/navigation'
 import type React from 'react'
-
-const cards = [
-  { key: 'users', label: 'Foydalanuvchilar', icon: Users, color: 'from-blue-500 to-blue-600', href: '/admin/users' },
-  { key: 'sellers', label: 'Sotuvchilar', icon: Store, color: 'from-emerald-500 to-emerald-600', href: '/admin/sellers' },
-  { key: 'properties', label: 'E\'lonlar', icon: Building2, color: 'from-violet-500 to-violet-600', href: '/admin/properties' },
-  { key: 'activeListings', label: 'Aktiv e\'lonlar', icon: TrendingUp, color: 'from-amber-500 to-amber-600', href: '/admin/properties' },
-  { key: 'messages', label: 'Xabarlar', icon: MessageSquare, color: 'from-rose-500 to-rose-600', href: '/admin/messages' },
-  { key: 'reviews', label: 'Sharhlar', icon: Star, color: 'from-cyan-500 to-cyan-600', href: '#' },
-  { key: 'totalViews', label: 'Ko\'rishlar', icon: Eye, color: 'from-orange-500 to-orange-600', href: '#' },
-]
+import { useI18n } from '@/lib/i18n/I18nContext'
 
 export default function AdminDashboard() {
   const router = useRouter()
+  const { t } = useI18n()
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const cards = [
+    { key: 'users', label: t('admin.dashboard.users'), icon: Users, color: 'from-blue-500 to-blue-600', href: '/admin/users' },
+    { key: 'sellers', label: t('admin.dashboard.sellers'), icon: Store, color: 'from-emerald-500 to-emerald-600', href: '/admin/sellers' },
+    { key: 'properties', label: t('admin.dashboard.properties'), icon: Building2, color: 'from-violet-500 to-violet-600', href: '/admin/properties' },
+    { key: 'activeListings', label: t('admin.dashboard.active_listings'), icon: TrendingUp, color: 'from-amber-500 to-amber-600', href: '/admin/properties' },
+    { key: 'messages', label: t('admin.dashboard.messages'), icon: MessageSquare, color: 'from-rose-500 to-rose-600', href: '/admin/messages' },
+    { key: 'reviews', label: t('admin.dashboard.reviews'), icon: Star, color: 'from-cyan-500 to-cyan-600', href: '#' },
+    { key: 'totalViews', label: t('admin.dashboard.views'), icon: Eye, color: 'from-orange-500 to-orange-600', href: '#' },
+  ]
 
   useEffect(() => {
     if (!isAdminLoggedIn()) { router.replace('/admin'); return }
@@ -36,8 +38,8 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Tizim statistikasi</p>
+        <h1 className="text-xl font-bold text-gray-900">{t('admin.dashboard.title')}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{t('admin.dashboard.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -60,12 +62,12 @@ export default function AdminDashboard() {
 
       {/* Quick links */}
       <div className="bg-white rounded-xl border border-gray-100 p-5">
-        <h2 className="text-sm font-semibold text-gray-900 mb-3">Tezkor amallar</h2>
+        <h2 className="text-sm font-semibold text-gray-900 mb-3">{t('admin.dashboard.quick_actions')}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <QuickLink href="/admin/users" label="Foydalanuvchilarni boshqarish" sub="Ko'rish, o'chirish" icon={Users} />
-          <QuickLink href="/admin/properties" label="E'lonlarni boshqarish" sub="Ko'rish, filtr, o'chirish" icon={Search} />
-          <QuickLink href="/admin/sellers" label="Sotuvchilarni boshqarish" sub="Ko'rish, o'chirish" icon={Store} />
-          <QuickLink href="/admin/messages" label="Xabarlarni ko'rish" sub="Barcha xabarlar" icon={MessageSquare} />
+          <QuickLink href="/admin/users" label={t('admin.dashboard.quick_users')} sub={t('admin.dashboard.quick_users_sub')} icon={Users} />
+          <QuickLink href="/admin/properties" label={t('admin.dashboard.quick_properties')} sub={t('admin.dashboard.quick_properties_sub')} icon={Search} />
+          <QuickLink href="/admin/sellers" label={t('admin.dashboard.quick_sellers')} sub={t('admin.dashboard.quick_sellers_sub')} icon={Store} />
+          <QuickLink href="/admin/messages" label={t('admin.dashboard.quick_messages')} sub={t('admin.dashboard.quick_messages_sub')} icon={MessageSquare} />
         </div>
       </div>
     </div>

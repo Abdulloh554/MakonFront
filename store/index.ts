@@ -3,7 +3,6 @@
 import type { Property, User, Message } from '../types'
 import type { Seller, Review, FilterOptions } from '../types'
 import { propertyApi, messageApi, sellerApi } from '../services/api'
-import { normalizePhone } from '../utils/phone'
 import { useAuthStore } from './auth.store'
 
 let _properties: Property[] = []
@@ -48,9 +47,13 @@ export async function restoreSession(): Promise<User | null> {
 
 // ─── Properties ─────────────────────────────────────────────────────
 export async function syncProperties(): Promise<Property[]> {
-  const properties = await propertyApi.list()
-  _properties = properties
-  return properties
+  try {
+    const properties = await propertyApi.list()
+    _properties = properties
+    return properties
+  } catch {
+    return _properties
+  }
 }
 
 export function getProperties(): Property[] {

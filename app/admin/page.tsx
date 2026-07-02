@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ShieldAlert, Eye, EyeOff, Lock, User } from 'lucide-react'
 import { apiAdminLogin, isAdminLoggedIn } from '@/services/admin'
+import { useI18n } from '@/lib/i18n/I18nContext'
 
 export default function AdminLoginPage() {
   const router = useRouter()
+  const { t } = useI18n()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
@@ -22,7 +24,7 @@ export default function AdminLoginPage() {
     e.preventDefault()
     setError('')
     if (!username.trim() || !password.trim()) {
-      setError('Username va parolni kiriting')
+      setError(t('admin.login.error'))
       return
     }
     setLoading(true)
@@ -30,7 +32,7 @@ export default function AdminLoginPage() {
       await apiAdminLogin(username.trim(), password)
       router.replace('/admin/dashboard')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Xatolik yuz berdi')
+      setError(err instanceof Error ? err.message : t('admin.login.error'))
     } finally {
       setLoading(false)
     }
@@ -50,7 +52,7 @@ export default function AdminLoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Username</label>
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">{t('admin.login.phone')}</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input type="text" value={username} onChange={e => setUsername(e.target.value)}
@@ -59,7 +61,7 @@ export default function AdminLoginPage() {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Parol</label>
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">{t('admin.login.password')}</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)}
@@ -81,9 +83,9 @@ export default function AdminLoginPage() {
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Kirish
+                  {t('admin.login.button')}
                 </span>
-              ) : 'Kirish'}
+              ) : t('admin.login.button')}
             </button>
           </form>
         </div>

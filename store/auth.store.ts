@@ -6,7 +6,7 @@
 
 import { create } from 'zustand'
 import type { User } from '@shared/types/user.types'
-import { authApi, setCsrfToken, clearCsrfToken } from '@/services/api'
+import { authApi, setCsrfToken, clearCsrfToken, refreshSession, fetchCsrfToken } from '@/services/api'
 
 interface AuthState {
   user: User | null
@@ -78,6 +78,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const u = await authApi.me()
       if (u) {
+        const refreshed = await refreshSession()
+        if (!refreshed) {
+          await fetchCsrfToken()
+        }
         set({ user: u, isAuthenticated: true, isLoading: false })
       } else {
         clearCsrfToken()

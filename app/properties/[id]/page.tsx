@@ -1,44 +1,12 @@
-import type { Metadata } from 'next'
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { useI18n } from '@/lib/i18n/I18nContext'
 import { MapPin, Maximize, BedDouble, Layers, Calendar, Phone, MessageCircle, Star, Building2, ChevronRight } from 'lucide-react'
 import type { Property } from '@/types'
-
-interface Props {
-  params: Promise<{ id: string }>
-}
-
-async function fetchProperty(id: string): Promise<Property | null> {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-    const res = await fetch(`${baseUrl}/api/v1/properties/${id}`, {
-      next: { revalidate: 120 },
-    })
-    if (!res.ok) return null
-    const body = await res.json()
-    return body.success ? (body.data as Property) : null
-  } catch {
-    return null
-  }
-}
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params
-  const property = await fetchProperty(id)
-  if (!property) {
-    return { title: 'Elon topilmadi — Maskan' }
-  }
-  return {
-    title: `${property.title} — Maskan`,
-    description: property.description.slice(0, 160),
-    openGraph: {
-      title: property.title,
-      description: property.description.slice(0, 160),
-      images: property.images[0] ? [{ url: property.images[0] }] : [],
-    },
-  }
-}
 
 const DEAL_TYPE_LABELS: Record<string, string> = {
   sale: 'Sotiladi', rent: 'Ijaraga', daily: 'Kunlik', installment: 'Bo\'lib to\'lov',
@@ -54,14 +22,58 @@ function formatPrice(price: number): string {
   return new Intl.NumberFormat('uz-UZ').format(price)
 }
 
-export default async function PropertyDetailPage({ params }: Props) {
-  const { id } = await params
-  const property = await fetchProperty(id)
-  if (!property) notFound()
+async function fetchProperty(id: string): Promise<Property | null> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+    const res = await fetch(`${baseUrl}/api/v1/properties/${id}`)
+    if (!res.ok) return null
+    const body = await res.json()
+    return body.success ? (body.data as Property) : null
+  } catch {
+    return null
+  }
+}
+
+export default function PropertyDetailPage() {
+  const { id } = useParams<{ id: string }>()
+  const { t } = useI18n()
+  const [property, setProperty] = useState<Property | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!id) return
+    fetchProperty(id).then((p) => {
+      setProperty(p)
+      setLoading(false)
+    })
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-6 md:py-10">
+        <div className="animate-pulse space-y-4">
+          <div className="h-64 sm:h-80 md:h-96 rounded-2xl bg-slate-200" />
+          <div className="h-8 w-3/4 bg-slate-200 rounded" />
+          <div className="h-4 w-1/2 bg-slate-200 rounded" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!property) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-6 md:py-10 text-center">
+        <h1 className="text-2xl font-bold text-slate-800">{t('not_found.title')}</h1>
+        <p className="text-slate-500 mt-2">{t('not_found.message')}</p>
+        <Link href="/" className="mt-4 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors">
+          {t('not_found.home')}
+        </Link>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 md:py-10">
-      {/* Image gallery */}
       <div className="relative h-64 sm:h-80 md:h-96 rounded-2xl overflow-hidden bg-slate-100 mb-6">
         <Image
           src={property.images[0] || '/placeholder.svg'}
@@ -83,7 +95,6 @@ export default async function PropertyDetailPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Title + badges */}
       <div className="mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-3">{property.title}</h1>
         <div className="flex flex-wrap gap-2">
@@ -101,7 +112,6 @@ export default async function PropertyDetailPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Info grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
         <InfoCard icon={<Maximize className="w-4 h-4" />} label={`${property.area} m²`} />
         {property.rooms > 0 && <InfoCard icon={<BedDouble className="w-4 h-4" />} label={`${property.rooms} xona`} />}
@@ -112,16 +122,14 @@ export default async function PropertyDetailPage({ params }: Props) {
         <InfoCard icon={<Calendar className="w-4 h-4" />} label={new Date(property.createdAt).toLocaleDateString('uz-UZ', { year: 'numeric', month: 'long', day: 'numeric' })} fullWidth />
       </div>
 
-      {/* Description */}
       <div className="p-5 rounded-xl bg-slate-50 border border-slate-200 mb-6">
-        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tavsif</h4>
+        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('property_form.description_label')}</h4>
         <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{property.description}</p>
       </div>
 
-      {/* Seller info */}
       <div className="rounded-xl border border-slate-200 mb-6">
         <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200">
-          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sotuvchi</h4>
+          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('sellers.title')}</h4>
         </div>
         <Link
           href={`/sellers/${property.sellerId}`}
@@ -132,7 +140,7 @@ export default async function PropertyDetailPage({ params }: Props) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-              Sotuvchi
+              {t('sellers.title')}
             </p>
             <div className="flex items-center gap-1 mt-1">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -144,21 +152,20 @@ export default async function PropertyDetailPage({ params }: Props) {
         </Link>
       </div>
 
-      {/* CTA */}
       <div className="flex gap-3">
         <a
           href={`tel:${property.sellerId}`}
           className="flex-1 flex items-center justify-center gap-2.5 py-3.5 rounded-2xl text-white font-bold text-sm bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all"
         >
           <Phone className="w-4 h-4" />
-          Qo&apos;ng&apos;iroq qilish
+          {t('sellers.contact')}
         </a>
         <Link
           href={`/messages?property=${property.id}`}
           className="flex-1 flex items-center justify-center gap-2.5 py-3.5 rounded-2xl font-bold text-sm border-2 border-blue-600 text-blue-600 bg-blue-50/50 hover:bg-blue-50 transition-all"
         >
           <MessageCircle className="w-4 h-4" />
-          Xabar yozish
+          {t('messages.type_placeholder')}
         </Link>
       </div>
     </div>

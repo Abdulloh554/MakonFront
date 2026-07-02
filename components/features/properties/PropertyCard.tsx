@@ -1,28 +1,26 @@
 'use client'
 
 import type { Property } from '@/types'
-import { MapPin, Maximize, BedDouble, Building2 } from 'lucide-react'
-import { PROPERTY_TYPE_LABELS, DEAL_TYPE_LABELS, STATUS_LABELS } from '@/constants'
-import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { MapPin, Maximize, BedDouble, Building2, Heart, Building } from 'lucide-react'
+import { PROPERTY_TYPE_LABELS, DEAL_TYPE_LABELS } from '@/constants'
+import { useState, memo } from 'react'
+import { useI18n } from '@/lib/i18n/I18nContext'
 
-const dealTypeConfig: Record<string, { bg: string; text: string; border: string }> = {
-  sale:        { bg: '#E6F1FB', text: '#0C447C', border: 'rgba(24,95,165,0.2)' },
-  rent:        { bg: '#f0fdf4', text: '#059669', border: 'rgba(5,150,105,0.2)' },
-  daily:       { bg: '#fefce8', text: '#b45309', border: 'rgba(180,83,9,0.2)' },
-  installment: { bg: '#f5f3ff', text: '#6d28d9', border: 'rgba(109,40,217,0.2)' },
-}
-
-const statusConfig: Record<string, { color: string; dot: string; label: string }> = {
-  ready:       { color: '#059669', dot: '#34d399', label: 'Tayyor uy' },
-  'half-ready':{ color: '#d97706', dot: '#fbbf24', label: 'Yarim tayyor' },
-  land:        { color: '#185FA5', dot: '#60a5fa', label: 'Tekis yer' },
+const dealBadgeClass: Record<string, string> = {
+  sale: 'badge-sale',
+  rent: 'badge-rent',
+  daily: 'badge-daily',
+  installment: 'badge-installment',
 }
 
 function formatPrice(price: number): string {
-  if (price >= 1000000) return `${(price / 1000000).toFixed(1)}M$`
-  if (price >= 1000) return `${(price / 1000).toFixed(price % 1000 === 0 ? 0 : 1)}K$`
-  return `${price}$`
+  return `$${price.toLocaleString('en-US')}`
+}
+
+function formatCompactPrice(price: number): string {
+  if (price >= 1000000) return `$${(price / 1000000).toFixed(1)}M`
+  if (price >= 1000) return `$${(price / 1000).toFixed(0)}K`
+  return `$${price}`
 }
 
 interface PropertyCardProps {
@@ -30,135 +28,101 @@ interface PropertyCardProps {
   onClick?: () => void
 }
 
-export default function PropertyCard({ property, onClick }: PropertyCardProps) {
+function PropertyCard({ property, onClick }: PropertyCardProps) {
+  const { t } = useI18n()
   const [imgErr, setImgErr] = useState(false)
-  const deal = dealTypeConfig[property.dealType] || dealTypeConfig.sale
-  const status = statusConfig[property.status] || statusConfig.ready
+  const [favorite, setFavorite] = useState(false)
+  const hasImage = property.images[0] && !imgErr
+  const dealCls = dealBadgeClass[property.dealType] || 'badge-sale'
 
   return (
-    <motion.div
-      whileHover={{
-        y: -6,
-        boxShadow: '0 24px 48px rgba(15,23,42,0.14), 0 8px 20px rgba(15,23,42,0.06)',
-        borderColor: 'rgba(24,95,165,0.15)',
-      }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onClick}
-      className="group bg-white rounded-2xl border overflow-hidden cursor-pointer transition-colors duration-300"
-      style={{
-        borderColor: 'rgba(226,232,240,0.7)',
-        boxShadow: '0 2px 8px rgba(15,23,42,0.05)',
-      }}
-    >
-      {/* Image area */}
-      <div className="relative h-44 md:h-48 bg-slate-100 overflow-hidden">
-        <motion.img
-          src={imgErr || !property.images[0] ? '/placeholder.svg' : property.images[0]}
-          alt={property.title}
-          className="w-full h-full object-cover"
-          style={{ transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)' }}
-          whileHover={{ scale: 1.07 }}
-          loading="lazy"
-          onError={() => setImgErr(true)}
-        />
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'linear-gradient(to top, rgba(15,23,42,0.4) 0%, rgba(15,23,42,0.04) 45%, transparent 100%)',
-          }}
-        />
-        {/* Top badges */}
-        <div className="absolute top-3 left-3 flex gap-1.5">
-          <span
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur-md"
-            style={{
-              background: 'rgba(255,255,255,0.88)',
-              color: status.color,
-              border: '1px solid rgba(255,255,255,0.6)',
-              boxShadow: '0 2px 8px rgba(15,23,42,0.1)',
-            }}
-          >
-            <span
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ background: status.dot }}
-            />
-            {STATUS_LABELS[property.status]}
-          </span>
-        </div>
-        <div className="absolute top-3 right-3">
-          <span
-            className="inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur-md"
-            style={{
-              background: `${deal.bg}dd`,
-              color: deal.text,
-              border: `1px solid ${deal.border}`,
-              boxShadow: '0 2px 8px rgba(15,23,42,0.06)',
-            }}
-          >
+    <div onClick={onClick} className="property-card group relative flex flex-col">
+      <div className="relative aspect-[4/3] overflow-hidden bg-[var(--surface-2)]">
+        {hasImage ? (
+          <img
+            src={property.images[0]}
+            alt={property.title}
+            className="w-full h-full object-cover transition-transform duration-[600ms] group-hover:scale-[1.07]"
+            loading="lazy"
+            onError={() => setImgErr(true)}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Building className="w-8 h-8 text-[var(--text-muted)]" />
+          </div>
+        )}
+
+        <div className="property-card-overlay absolute inset-0" />
+
+        <div className="absolute top-3 left-3">
+          <span className={`badge ${dealCls}`}>
             {DEAL_TYPE_LABELS[property.dealType]}
           </span>
         </div>
-        {/* Bottom price */}
-        <div className="absolute bottom-3 left-3">
-          <p
-            className="text-lg font-extrabold leading-none"
-            style={{
-              background: 'linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.35))',
-            }}
-          >
-            {formatPrice(property.price)}
-          </p>
-          {property.dealType === 'installment' && property.installmentMonths && (
-            <p className="text-[10px] text-white/80 font-medium mt-0.5">
-              oyiga {formatPrice(property.installmentPrice || 0)} / {property.installmentMonths} oy
-            </p>
-          )}
-        </div>
+
+        <button
+          onClick={(e) => { e.stopPropagation(); setFavorite(!favorite) }}
+          className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+          style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)' }}
+          aria-label={favorite ? 'Sevimlilardan olib tashlash' : 'Sevimlilarga qo\'shish'}
+        >
+          <Heart
+            className={`w-4 h-4 transition-colors duration-150 ${favorite ? 'fill-red-500 text-red-500' : 'text-white'}`}
+          />
+        </button>
       </div>
 
-      {/* Content */}
-      <div className="p-3.5">
-        <h3 className="font-semibold text-sm text-slate-800 line-clamp-1 mb-2.5 leading-snug">
+      <div className="flex flex-col gap-2 p-4 bg-[var(--surface)]">
+        <p className="text-xl font-extrabold leading-none text-[var(--text-primary)]">
+          {formatPrice(property.price)}
+        </p>
+        {property.dealType === 'installment' && property.installmentMonths && (
+          <p className="text-[11px] text-[var(--text-muted)] font-medium">
+            {formatCompactPrice(property.installmentPrice || 0)} / oy · {property.installmentMonths} oy
+          </p>
+        )}
+
+        <h3 className="text-base font-medium text-[var(--text-primary)] leading-snug line-clamp-1">
           {property.title}
         </h3>
 
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap text-[13px] text-[var(--text-secondary)]">
           {property.rooms > 0 && (
-            <div className="flex items-center gap-1">
-              <BedDouble className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-xs text-slate-500 font-medium">{property.rooms} xona</span>
-            </div>
+            <>
+              <span className="inline-flex items-center gap-1">
+                <BedDouble className="w-3.5 h-3.5 shrink-0" />
+                {t('property.rooms', { n: property.rooms })}
+              </span>
+              <span className="text-[var(--text-muted)]">·</span>
+            </>
           )}
-          <div className="flex items-center gap-1">
-            <Maximize className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-xs text-slate-500 font-medium">{property.area} m²</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Building2 className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-xs text-slate-500 font-medium">{PROPERTY_TYPE_LABELS[property.type]}</span>
-          </div>
+          <span className="inline-flex items-center gap-1">
+            <Maximize className="w-3.5 h-3.5 shrink-0" />
+            {property.area} m²
+          </span>
+          <span className="text-[var(--text-muted)]">·</span>
+          <span className="inline-flex items-center gap-1">
+            <Building2 className="w-3.5 h-3.5 shrink-0" />
+            {PROPERTY_TYPE_LABELS[property.type]}
+          </span>
         </div>
 
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
-          <div className="flex items-center gap-1 min-w-0">
-            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-            <span className="text-[11px] text-slate-400 truncate">{property.location.address.split(',')[0]}</span>
-          </div>
+        <div className="flex items-center justify-between pt-2 mt-1 border-t border-[var(--border)]">
+          <span className="inline-flex items-center gap-1 min-w-0 text-[12px] text-[var(--text-secondary)]">
+            <MapPin className="w-3 h-3 shrink-0" />
+            <span className="truncate">{property.location.address.split(',')[0]}</span>
+          </span>
           <a
             href="/map"
             onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold shrink-0 transition-colors"
-            style={{ color: '#185FA5', background: 'rgba(24,95,165,0.06)' }}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold shrink-0 transition-colors text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
           >
-            <MapPin className="w-2.5 h-2.5" />
-            Xaritada
+            {t('property.on_map')}
           </a>
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }
+
+export default memo(PropertyCard)

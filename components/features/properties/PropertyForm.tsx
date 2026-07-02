@@ -2,34 +2,13 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react'
 import dynamic from 'next/dynamic'
-import Image from 'next/image'
 import { motion } from 'framer-motion'
 import FormField from '@/components/ui/FormField'
+import Select from '@/components/ui/Select'
 import { Map, Upload, X } from 'lucide-react'
+import { useI18n } from '@/lib/i18n/I18nContext'
 
 const MapPicker = dynamic(() => import('@/components/features/map/MapPicker'), { ssr: false })
-
-const propertyTypes = [
-  { value: 'apartment', label: 'Kvartira' },
-  { value: 'house', label: 'Hovli' },
-  { value: 'cottage', label: 'Kottej' },
-  { value: 'dacha', label: 'Dacha' },
-  { value: 'commercial', label: 'Tijorat' },
-  { value: 'land', label: 'Yer' },
-]
-
-const dealTypes = [
-  { value: 'daily', label: 'Kunlik' },
-  { value: 'sale', label: 'Sotiladi' },
-  { value: 'rent', label: 'Ijara' },
-  { value: 'installment', label: 'Nasiya' },
-]
-
-const statuses = [
-  { value: 'ready', label: 'Tayyor' },
-  { value: 'half-ready', label: 'Yarim tayyor' },
-  { value: 'land', label: 'Tekis yer' },
-]
 
 export interface PropertyFormData {
   title: string
@@ -57,13 +36,37 @@ interface PropertyFormProps {
 
 const defaultData: PropertyFormData = {
   title: '', description: '', price: 0,
-  type: 'apartment', dealType: 'sale', status: 'ready',
-  imageFiles: [], area: 50, rooms: 2,
-  floor: 1, totalFloors: 5, installmentMonths: 12,
-  address: '', lat: 41.3111, lng: 69.2797,
+  type: '', dealType: '', status: '',
+  imageFiles: [], area: 0, rooms: 0,
+  floor: 0, totalFloors: 0, installmentMonths: 0,
+  address: '', lat: 0, lng: 0,
 }
 
 export default function PropertyForm({ initialData, onSubmit, saving = false }: PropertyFormProps) {
+  const { t } = useI18n()
+
+  const propertyTypes = [
+    { value: 'apartment', label: t('property.type.apartment') },
+    { value: 'house', label: t('property.type.house') },
+    { value: 'cottage', label: t('property.type.cottage') },
+    { value: 'dacha', label: t('property.type.dacha') },
+    { value: 'commercial', label: t('property.type.commercial') },
+    { value: 'land', label: t('property.type.land') },
+  ]
+
+  const dealTypes = [
+    { value: 'daily', label: t('property.deal.daily') },
+    { value: 'sale', label: t('property.deal.sale') },
+    { value: 'rent', label: t('property.deal.rent') },
+    { value: 'installment', label: t('property.deal.installment') },
+  ]
+
+  const statuses = [
+    { value: 'ready', label: t('property.status.ready') },
+    { value: 'half-ready', label: t('property.status.half_ready') },
+    { value: 'land', label: t('property.status.land') },
+  ]
+
   const [form, setForm] = useState<PropertyFormData>({ ...defaultData, ...initialData })
   const [showMapPicker, setShowMapPicker] = useState(false)
   const [fileErrors, setFileErrors] = useState<string[]>([])
@@ -88,11 +91,14 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const newErrors: Partial<Record<keyof PropertyFormData, string>> = {}
-    if (!form.title.trim()) newErrors.title = 'Sarlavha majburiy'
-    if (!form.description.trim()) newErrors.description = 'Tavsif majburiy'
-    else if (form.description.trim().length < 10) newErrors.description = 'Tavsif kamida 10 ta belgidan iborat bo\'lishi kerak'
-    if (form.price <= 0) newErrors.price = 'Narx musbat son bo\'lishi kerak'
-    if (!form.address.trim()) newErrors.address = 'Manzil majburiy'
+    if (!form.title.trim()) newErrors.title = t('property_form.validation.title_required')
+    if (!form.description.trim()) newErrors.description = t('property_form.validation.description_required')
+    else if (form.description.trim().length < 10) newErrors.description = t('property_form.validation.description_min_length')
+    if (form.price <= 0) newErrors.price = t('property_form.validation.price_positive')
+    if (!form.type) newErrors.type = t('property_form.validation.type_required')
+    if (!form.dealType) newErrors.dealType = t('property_form.validation.deal_required')
+    if (!form.status) newErrors.status = t('property_form.validation.status_required')
+    if (!form.address.trim()) newErrors.address = t('property_form.validation.address_required')
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
@@ -101,6 +107,15 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
   }
 
   const showFloor = form.type === 'apartment' || form.type === 'commercial'
+
+  function formatPrice(val: string): string {
+    const digits = val.replace(/\D/g, '')
+    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+  }
+
+  function parsePrice(val: string): number {
+    return Number(val.replace(/\s/g, '')) || 0
+  }
 
   return (
     <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
@@ -113,32 +128,33 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
         >
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Asosiy ma&apos;lumotlar</h2>
 
-          <FormField label="Sarlavha" delay={0.05}>
+          <FormField label={t('property_form.title_label')} delay={0.05}>
               <input
                 type="text" value={form.title}
                 onChange={(e) => update('title', e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
-                placeholder="Masalan: 3 xonali kvartira"
+                placeholder={t('property_form.title_placeholder')}
               />
             {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
           </FormField>
 
-          <FormField label="Tavsif" delay={0.08}>
+          <FormField label={t('property_form.description_label')} delay={0.08}>
             <textarea
               value={form.description}
               onChange={(e) => update('description', e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none min-h-[100px] resize-none"
-              placeholder="Batafsil ma'lumot (kamida 10 belgi)"
+              placeholder={t('property_form.description_placeholder')}
             />
             {errors.description && <p className="text-xs text-red-500 mt-1">{errors.description}</p>}
           </FormField>
 
-          <FormField label="Narx ($)" delay={0.1}>
+          <FormField label={t('property_form.price_label')} delay={0.1}>
             <input
-              type="number" value={form.price}
-              onChange={(e) => update('price', Number(e.target.value))}
+              type="text" inputMode="numeric"
+              value={form.price ? formatPrice(String(form.price)) : ''}
+              onChange={(e) => update('price', parsePrice(e.target.value))}
               className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
-              placeholder="0"
+              placeholder={t('property_form.price_placeholder')}
             />
             {errors.price && <p className="text-xs text-red-500 mt-1">{errors.price}</p>}
           </FormField>
@@ -156,37 +172,35 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Mulk turi</label>
-              <select
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">{t('property_form.type_label')}</label>
+              <Select
                 value={form.type}
-                onChange={(e) => update('type', e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none outline-none"
-                style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-              >
-                {propertyTypes.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
+                onChange={(v) => update('type', v)}
+                options={propertyTypes}
+                placeholder={t('select.placeholder')}
+              />
+              {errors.type && <p className="text-xs text-red-500 mt-1">{errors.type}</p>}
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Bitim turi</label>
-              <select
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">{t('property_form.deal_label')}</label>
+              <Select
                 value={form.dealType}
-                onChange={(e) => update('dealType', e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none outline-none"
-                style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-              >
-                {dealTypes.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
+                onChange={(v) => update('dealType', v)}
+                options={dealTypes}
+                placeholder={t('select.placeholder')}
+              />
+              {errors.dealType && <p className="text-xs text-red-500 mt-1">{errors.dealType}</p>}
             </div>
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Holati</label>
+            <label className="text-sm font-medium text-gray-700 mb-1.5 block">{t('property_form.status_label')}</label>
             <div className="flex gap-2">
               {statuses.map((s) => (
                 <button
                   key={s.value}
                   type="button"
-                  onClick={() => update('status', s.value)}
+                  onClick={() => update('status', form.status === s.value ? '' : s.value)}
                   className={`flex-1 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                     form.status === s.value
                       ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
@@ -197,6 +211,7 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
                 </button>
               ))}
             </div>
+            {errors.status && <p className="text-xs text-red-500 mt-1">{errors.status}</p>}
           </div>
 
           {form.dealType === 'installment' && (
@@ -205,11 +220,12 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
               animate={{ opacity: 1, height: 'auto' }}
               transition={{ duration: 0.2 }}
             >
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Nechi oyga?</label>
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">{t('property_form.installment_months_label')}</label>
               <input
-                type="number" min={1} max={120} value={form.installmentMonths}
+                type="number" min={1} max={120} value={form.installmentMonths || ''}
                 onChange={(e) => update('installmentMonths', Number(e.target.value))}
                 className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
+                placeholder="0"
               />
             </motion.div>
           )}
@@ -225,7 +241,7 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
         >
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Media va detallar</h2>
 
-          <FormField label="Rasmlar" delay={0.18}>
+          <FormField label={t('property_form.images_label')} delay={0.18}>
             <div className="space-y-3">
               <label className="flex items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all">
                 <input
@@ -252,7 +268,7 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
                   }}
                 />
                 <Upload className="w-5 h-5 text-gray-400" />
-                <span className="text-sm text-gray-500">Rasm qo&apos;shish</span>
+                <span className="text-sm text-gray-500">{t('property_form.upload_button')}</span>
               </label>
               {fileErrors.length > 0 && (
                 <div className="text-xs text-red-500 space-y-0.5">
@@ -263,13 +279,10 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
                 <div className="grid grid-cols-3 gap-2">
                   {form.imageFiles.map((file, i) => (
                     <div key={i} className="relative group">
-                      <Image
+                      <img
                         src={objectUrls[i] || ''}
                         alt=""
-                        width={200}
-                        height={96}
                         className="w-full h-24 object-cover rounded-lg"
-                        unoptimized
                       />
                       <button
                         type="button"
@@ -293,18 +306,20 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
           </FormField>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <FormField label="Maydon (m²)" delay={0.2}>
+          <FormField label={t('property_form.area_label')} delay={0.2}>
             <input
-              type="number" value={form.area}
+              type="number" value={form.area || ''}
               onChange={(e) => update('area', Number(e.target.value))}
               className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
+              placeholder="0"
             />
             </FormField>
-            <FormField label="Xonalar" delay={0.22}>
+            <FormField label={t('property_form.rooms_label')} delay={0.22}>
               <input
-                type="number" min={0} value={form.rooms}
+                type="number" min={0} value={form.rooms || ''}
                 onChange={(e) => update('rooms', Number(e.target.value))}
                 className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
+                placeholder="0"
               />
             </FormField>
           </div>
@@ -317,56 +332,37 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
               className="grid grid-cols-1 md:grid-cols-2 gap-3"
             >
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1.5 block">Qavat</label>
+                <label className="text-sm font-medium text-gray-700 mb-1.5 block">{t('property_form.floor_label')}</label>
                 <input
-                  type="number" min={1} value={form.floor}
+                  type="number" min={1} value={form.floor || ''}
                   onChange={(e) => update('floor', Number(e.target.value))}
                   className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
+                  placeholder="0"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1.5 block">Qavatlar soni</label>
+                <label className="text-sm font-medium text-gray-700 mb-1.5 block">{t('property_form.total_floors_label')}</label>
                 <input
-                  type="number" min={1} value={form.totalFloors}
+                  type="number" min={1} value={form.totalFloors || ''}
                   onChange={(e) => update('totalFloors', Number(e.target.value))}
                   className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
+                  placeholder="0"
                 />
               </div>
             </motion.div>
           )}
 
-          <FormField label="Manzil" delay={0.24}>
+          <FormField label={t('property_form.address_label')} delay={0.24}>
             <div className="flex gap-2">
               <div className="flex-1">
               <input
                 type="text" value={form.address}
                 onChange={(e) => update('address', e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
-                placeholder="Toshkent, Chilonzor tumani"
+                placeholder={t('property_form.address_placeholder')}
               />
               {errors.address && <p className="text-xs text-red-500 mt-1">{errors.address}</p>}
               </div>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!form.address.trim()) return
-                  try {
-                    const res = await fetch(
-                      'https://nominatim.openstreetmap.org/search?format=json&q=' +
-                      encodeURIComponent(form.address + ', Uzbekistan') +
-                      '&limit=1'
-                    )
-                    const data = await res.json()
-                    if (data.length > 0) {
-                      update('lat', parseFloat(data[0].lat))
-                      update('lng', parseFloat(data[0].lon))
-                    }
-                  } catch {}
-                }}
-                className="px-3 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 active:scale-95 transition-all shrink-0"
-              >
-                Topish
-              </button>
               <button
                 type="button"
                 onClick={() => setShowMapPicker(true)}
@@ -381,16 +377,18 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <FormField label="Kenglik (lat)" delay={0.26}>
               <input
-                type="number" step="0.0001" value={form.lat}
+                type="number" step="0.0001" value={form.lat || ''}
                 onChange={(e) => update('lat', Number(e.target.value))}
                 className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
+                placeholder="0"
               />
             </FormField>
             <FormField label="Uzunlik (lng)" delay={0.28}>
               <input
-                type="number" step="0.0001" value={form.lng}
+                type="number" step="0.0001" value={form.lng || ''}
                 onChange={(e) => update('lng', Number(e.target.value))}
                 className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
+                placeholder="0"
               />
             </FormField>
           </div>
@@ -408,18 +406,16 @@ export default function PropertyForm({ initialData, onSubmit, saving = false }: 
           {saving ? (
             <span className="flex items-center justify-center gap-2">
               <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Saqlanmoqda...
+              {t('property_form.saving')}
             </span>
           ) : (
-            'Elonni joylash'
+            t('property_form.submit')
           )}
         </motion.button>
       </div>
 
       {showMapPicker && (
         <MapPicker
-          initialLat={form.lat}
-          initialLng={form.lng}
           onSelect={(lat, lng) => {
             update('lat', lat)
             update('lng', lng)

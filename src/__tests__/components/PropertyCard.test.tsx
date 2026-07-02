@@ -91,17 +91,11 @@ describe('PropertyCard', () => {
     expect(screen.getByText('Amir Temur')).toBeInTheDocument()
   })
 
-  it('renders placeholder image when image fails to load', () => {
-    const img = new Image()
-    Object.defineProperty(img, 'src', {
-      get() { return this._src || '' },
-      set(val) { this._src = val },
-    })
-
+  it('renders placeholder icon when no image is provided', () => {
     const noImage = { ...mockProperty, images: [] }
-    render(<PropertyCard property={noImage} />)
-    const renderedImg = screen.getByAltText('Luxury Apartment in Center')
-    expect(renderedImg).toBeInTheDocument()
+    const { container } = render(<PropertyCard property={noImage} />)
+    const placeholder = container.querySelector('.lucide-home')
+    expect(placeholder).toBeInTheDocument()
   })
 
   it('calls onClick when clicked', async () => {

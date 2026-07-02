@@ -4,9 +4,11 @@ import { useState, useEffect, useCallback, startTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Trash2, ChevronLeft, ChevronRight, Search, Shield, User } from 'lucide-react'
 import { apiAdminUsers, apiAdminDeleteUser, isAdminLoggedIn } from '@/services/admin'
+import { useI18n } from '@/lib/i18n/I18nContext'
 
 export default function AdminUsers() {
   const router = useRouter()
+  const { t } = useI18n()
   const [users, setUsers] = useState<Record<string, unknown>[]>([])
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
@@ -45,7 +47,7 @@ export default function AdminUsers() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Foydalanuvchilar</h1>
+          <h1 className="text-xl font-bold text-gray-900">{t('admin.users.title')}</h1>
           <p className="text-sm text-gray-500 mt-0.5">Jami: {total}</p>
         </div>
       </div>
@@ -54,7 +56,7 @@ export default function AdminUsers() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input type="text" value={search} onChange={e => setSearch(e.target.value)}
           className="w-full pl-9 pr-4 py-2 rounded-lg bg-white border border-gray-200 text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 outline-none"
-          placeholder="Qidirish..." />
+          placeholder={t('admin.users.search')} />
       </div>
 
       <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
@@ -62,11 +64,11 @@ export default function AdminUsers() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                <th className="px-4 py-3">Ism</th>
-                <th className="px-4 py-3">Telefon</th>
-                <th className="px-4 py-3">Rol</th>
-                <th className="px-4 py-3">Ro&apos;yxatdan o&apos;tgan</th>
-                <th className="px-4 py-3 text-right">Amal</th>
+                <th className="px-4 py-3">{t('admin.users.name')}</th>
+                <th className="px-4 py-3">{t('admin.users.phone')}</th>
+                <th className="px-4 py-3">{t('admin.users.role')}</th>
+                <th className="px-4 py-3">{t('admin.users.registered')}</th>
+                <th className="px-4 py-3 text-right">{t('admin.users.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -87,7 +89,7 @@ export default function AdminUsers() {
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${u.role === 'admin' ? 'bg-purple-100 text-purple-700' : u.role === 'seller' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
                       {u.role === 'admin' ? <Shield className="w-3 h-3" /> : <User className="w-3 h-3" />}
-                      {u.role === 'admin' ? 'Admin' : u.role === 'seller' ? 'Sotuvchi' : 'Foydalanuvchi'}
+                      {u.role === 'admin' ? t('admin.users.role_admin') : u.role === 'seller' ? t('admin.users.role_seller') : t('admin.users.role_user')}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{String(u.createdAt || '').slice(0, 10) || '-'}</td>
@@ -102,7 +104,7 @@ export default function AdminUsers() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-400">Foydalanuvchilar topilmadi</td></tr>
+                <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-400">{t('admin.users.not_found')}</td></tr>
               )}
             </tbody>
           </table>

@@ -2,13 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { auth, isSignInWithEmailLink, signInWithEmailLink } from '@/lib/firebase'
+import { useI18n } from '@/lib/i18n/I18nContext'
+import { getAuthInstance, isSignInWithEmailLink, signInWithEmailLink } from '@/lib/firebase'
 import { authApi } from '@/services/api'
 import { useAuthStore } from '@/store/auth.store'
+
+const auth = getAuthInstance()
 
 export default function AuthCallbackPage() {
   const router = useRouter()
   const setUser = useAuthStore((s) => s.setUser)
+  const { t } = useI18n()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
@@ -42,7 +46,7 @@ export default function AuthCallbackPage() {
         setUser(data.user)
         router.push('/profile')
       } catch (err) {
-        setError(err.message || 'Kirishda xatolik yuz berdi')
+        setError(err instanceof Error ? err.message : 'Kirishda xatolik yuz berdi')
         setLoading(false)
       }
     }
@@ -56,7 +60,7 @@ export default function AuthCallbackPage() {
         {loading && (
           <>
             <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-sm text-slate-500">Kirish tekshirilmoqda...</p>
+            <p className="text-sm text-slate-500">{t('common.loading')}</p>
           </>
         )}
         {error && (
@@ -67,7 +71,7 @@ export default function AuthCallbackPage() {
               className="text-xs font-semibold underline underline-offset-2"
               style={{ color: '#185FA5' }}
             >
-              Qayta urinish
+              {t('error.retry')}
             </button>
           </>
         )}

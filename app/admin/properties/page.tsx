@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback, startTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
-import { apiAdminProperties, apiAdminDeleteProperty, isAdminLoggedIn } from '@/services/admin'
+import { Trash2, Star, ChevronLeft, ChevronRight } from 'lucide-react'
+import { apiAdminProperties, apiAdminDeleteProperty, apiAdminToggleFeatured, isAdminLoggedIn } from '@/services/admin'
+import { useI18n } from '@/lib/i18n/I18nContext'
+import Select from '@/components/ui/Select'
 
 const dealLabels: Record<string, string> = { daily: 'Kunlik', sale: 'Sotiladi', rent: 'Ijara', installment: 'Nasiya' }
 const typeLabels: Record<string, string> = { apartment: 'Kvartira', house: 'Hovli', cottage: 'Kottej', dacha: 'Dacha', commercial: 'Tijorat', land: 'Yer' }
@@ -11,6 +13,7 @@ const statusLabels: Record<string, string> = { ready: 'Tayyor', 'half-ready': 'Y
 
 export default function AdminProperties() {
   const router = useRouter()
+  const { t } = useI18n()
   const [properties, setProperties] = useState<Record<string, unknown>[]>([])
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
@@ -39,31 +42,47 @@ export default function AdminProperties() {
     } catch (e: unknown) { alert(e instanceof Error ? e.message : 'Xatolik') }
   }
 
+  async function handleToggleFeatured(id: string) {
+    try {
+      await apiAdminToggleFeatured(id)
+      load()
+    } catch (e: unknown) { alert(e instanceof Error ? e.message : 'Xatolik') }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">E&apos;lonlar</h1>
+          <h1 className="text-xl font-bold text-gray-900">{t('admin.properties.title')}</h1>
           <p className="text-sm text-gray-500 mt-0.5">Jami: {total}</p>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <select value={filters.dealType || ''} onChange={e => { setFilters(f => ({ ...f, dealType: e.target.value })); setPage(1) }}
-          className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs bg-white focus:border-blue-400 outline-none">
-          <option value="">Barcha bitim</option>
-          {Object.entries(dealLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
-        <select value={filters.type || ''} onChange={e => { setFilters(f => ({ ...f, type: e.target.value })); setPage(1) }}
-          className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs bg-white focus:border-blue-400 outline-none">
-          <option value="">Barcha tur</option>
-          {Object.entries(typeLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
-        <select value={filters.status || ''} onChange={e => { setFilters(f => ({ ...f, status: e.target.value })); setPage(1) }}
-          className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs bg-white focus:border-blue-400 outline-none">
-          <option value="">Barcha holat</option>
-          {Object.entries(statusLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
+        <Select
+          value={filters.dealType || ''}
+          onChange={v => { setFilters(f => ({ ...f, dealType: v })); setPage(1) }}
+          options={Object.entries(dealLabels).map(([value, label]) => ({ value, label }))}
+          placeholder={t('admin.properties.filter_all')}
+          size="sm"
+          className="w-auto min-w-[120px]"
+        />
+        <Select
+          value={filters.type || ''}
+          onChange={v => { setFilters(f => ({ ...f, type: v })); setPage(1) }}
+          options={Object.entries(typeLabels).map(([value, label]) => ({ value, label }))}
+          placeholder={t('admin.properties.filter_all')}
+          size="sm"
+          className="w-auto min-w-[100px]"
+        />
+        <Select
+          value={filters.status || ''}
+          onChange={v => { setFilters(f => ({ ...f, status: v })); setPage(1) }}
+          options={Object.entries(statusLabels).map(([value, label]) => ({ value, label }))}
+          placeholder={t('admin.properties.filter_all')}
+          size="sm"
+          className="w-auto min-w-[110px]"
+        />
       </div>
 
       <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
@@ -71,14 +90,15 @@ export default function AdminProperties() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                <th className="px-4 py-3">Sarlavha</th>
-                <th className="px-4 py-3">Narx</th>
-                <th className="px-4 py-3">Tur</th>
-                <th className="px-4 py-3">Bitim</th>
-                <th className="px-4 py-3">Holat</th>
-                <th className="px-4 py-3">Manzil</th>
-                <th className="px-4 py-3">Yaratilgan</th>
-                <th className="px-4 py-3 text-right">Amal</th>
+                <th className="px-4 py-3">{t('admin.properties.title_col')}</th>
+                <th className="px-4 py-3">{t('admin.properties.price')}</th>
+                <th className="px-4 py-3">{t('admin.properties.type')}</th>
+                <th className="px-4 py-3">{t('admin.properties.deal')}</th>
+                <th className="px-4 py-3">{t('admin.properties.status')}</th>
+                <th className="px-4 py-3">{t('admin.properties.featured')}</th>
+                <th className="px-4 py-3">{t('admin.properties.address')}</th>
+                <th className="px-4 py-3">{t('admin.properties.created')}</th>
+                <th className="px-4 py-3 text-right">{t('admin.properties.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -93,6 +113,15 @@ export default function AdminProperties() {
                       {statusLabels[String(p.status || '')] || String(p.status || '-')}
                     </span>
                   </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => handleToggleFeatured(String(p.id || p._id || ''))}
+                      className={`p-1.5 rounded-lg transition-all ${p.featured ? 'text-amber-500 hover:text-amber-600' : 'text-gray-300 hover:text-gray-400'}`}
+                      title={p.featured ? t('admin.properties.featured_remove') : t('admin.properties.featured_add')}
+                    >
+                      <Star className="w-4 h-4" fill={p.featured ? 'currentColor' : 'none'} />
+                    </button>
+                  </td>
                   <td className="px-4 py-3 text-gray-400 text-xs max-w-[150px] truncate">
                     {String((p.location as Record<string, unknown>)?.address || '-')}
                   </td>
@@ -106,7 +135,7 @@ export default function AdminProperties() {
                 </tr>
               ))}
               {properties.length === 0 && (
-                <tr><td colSpan={8} className="px-4 py-8 text-center text-sm text-gray-400">E&apos;lonlar topilmadi</td></tr>
+                <tr><td colSpan={9} className="px-4 py-8 text-center text-sm text-gray-400">{t('admin.properties.not_found')}</td></tr>
               )}
             </tbody>
           </table>

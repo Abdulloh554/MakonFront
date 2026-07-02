@@ -8,19 +8,21 @@ import {
   LogOut, Menu, ChevronRight, ShieldAlert
 } from 'lucide-react'
 import { isAdminLoggedIn, adminLogout, getAdminUser } from '@/services/admin'
-
-const navItems = [
-  { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/users', label: 'Foydalanuvchilar', icon: Users },
-  { href: '/admin/properties', label: "E'lonlar", icon: Building2 },
-  { href: '/admin/sellers', label: 'Sotuvchilar', icon: Store },
-  { href: '/admin/messages', label: 'Xabarlar', icon: MessageSquare },
-]
+import { useI18n } from '@/lib/i18n/I18nContext'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
+  const { t } = useI18n()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  const navItems = [
+    { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/admin/users', label: t('admin.nav.foydalanuvchilar'), icon: Users },
+    { href: '/admin/properties', label: t('admin.nav.elonlar'), icon: Building2 },
+    { href: '/admin/sellers', label: t('admin.nav.sotuvchilar'), icon: Store },
+    { href: '/admin/messages', label: t('admin.nav.xabarlar'), icon: MessageSquare },
+  ]
 
   if (pathname === '/admin' || !isAdminLoggedIn()) {
     return <>{children}</>
@@ -71,7 +73,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <button onClick={() => { adminLogout(); router.replace('/admin') }}
             className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-300 hover:bg-red-600/20 hover:text-red-400 transition-all">
             <LogOut className="w-4 h-4" />
-            <span>Chiqish</span>
+            <span>{t('admin.nav.chiqish')}</span>
           </button>
         </div>
       </aside>

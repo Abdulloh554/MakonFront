@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useRef } from 'react'
+import { useI18n } from '@/lib/i18n/I18nContext'
 import { AnimatePresence } from 'framer-motion'
 import Toast from './Toast'
 import type { ToastItem, ToastType } from './Toast'

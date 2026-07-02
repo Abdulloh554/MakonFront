@@ -22,8 +22,9 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs && \
+    apk add --no-cache curl
 
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
@@ -38,6 +39,6 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+  CMD curl -f http://localhost:3000/ || exit 1
 
 CMD ["next", "start"]

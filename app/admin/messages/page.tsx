@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { apiAdminMessages, isAdminLoggedIn } from '@/services/admin'
+import { useI18n } from '@/lib/i18n/I18nContext'
 
 export default function AdminMessages() {
   const router = useRouter()
+  const { t } = useI18n()
   const [messages, setMessages] = useState<Record<string, unknown>[]>([])
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
@@ -33,7 +35,7 @@ export default function AdminMessages() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Xabarlar</h1>
+        <h1 className="text-xl font-bold text-gray-900">{t('admin.messages.title')}</h1>
         <p className="text-sm text-gray-500 mt-0.5">Jami: {total}</p>
       </div>
 
@@ -42,11 +44,11 @@ export default function AdminMessages() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                <th className="px-4 py-3">Kimdan</th>
-                <th className="px-4 py-3">Kimga</th>
-                <th className="px-4 py-3">Xabar</th>
-                <th className="px-4 py-3">O&apos;qilgan</th>
-                <th className="px-4 py-3">Vaqti</th>
+                <th className="px-4 py-3">{t('admin.messages.from')}</th>
+                <th className="px-4 py-3">{t('admin.messages.to')}</th>
+                <th className="px-4 py-3">{t('admin.messages.message')}</th>
+                <th className="px-4 py-3">{t('admin.messages.read')}</th>
+                <th className="px-4 py-3">{t('admin.messages.time')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -57,16 +59,16 @@ export default function AdminMessages() {
                   <td className="px-4 py-3 text-gray-600 max-w-[300px] truncate">{String(m.text || '-')}</td>
                   <td className="px-4 py-3">
                     {m.read ? (
-                      <span className="px-2 py-0.5 rounded-full bg-green-50 text-green-600 text-[11px] font-medium">O&apos;qilgan</span>
+                      <span className="px-2 py-0.5 rounded-full bg-green-50 text-green-600 text-[11px] font-medium">{t('admin.messages.read_yes')}</span>
                     ) : (
-                      <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 text-[11px] font-medium">Yangi</span>
+                      <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 text-[11px] font-medium">{t('admin.messages.read_no')}</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{String(m.createdAt || '').slice(0, 16).replace('T', ' ') || '-'}</td>
                 </tr>
               ))}
               {messages.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-400">Xabarlar topilmadi</td></tr>
+                <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-400">{t('admin.messages.not_found')}</td></tr>
               )}
             </tbody>
           </table>

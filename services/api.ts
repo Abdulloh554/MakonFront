@@ -41,13 +41,32 @@ class ApiClientError extends Error {
   }
 }
 
-async function refreshSession(): Promise<boolean> {
+export async function fetchCsrfToken(): Promise<string | null> {
   try {
+    const res = await fetch(API_ROUTES.AUTH.CSRF, { credentials: 'include' })
+    if (!res.ok) return null
+    const body = await res.json()
+    if (body.success && body.data?.csrfToken) {
+      setCsrfToken(body.data.csrfToken)
+      return body.data.csrfToken
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+export async function refreshSession(): Promise<boolean> {
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
     const response = await fetch(API_ROUTES.AUTH.REFRESH, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
     })
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       return false
@@ -78,6 +97,9 @@ async function request<T>(
     headers['X-CSRF-Token'] = csrfToken
   }
 
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 10000)
+
   let response = await fetch(path, {
     ...options,
     headers: {
@@ -85,7 +107,9 @@ async function request<T>(
       ...(options.headers as Record<string, string>),
     },
     credentials: 'include',
+    signal: controller.signal,
   })
+  clearTimeout(timeoutId)
 
   // Auto-refresh on 401
   if (response.status === 401 && !options.skipAuth) {
@@ -104,6 +128,9 @@ async function request<T>(
         headers['X-CSRF-Token'] = csrfToken
       }
 
+      const retryController = new AbortController()
+      const retryTimeoutId = setTimeout(() => retryController.abort(), 10000)
+
       response = await fetch(path, {
         ...options,
         headers: {
@@ -111,7 +138,9 @@ async function request<T>(
           ...(options.headers as Record<string, string>),
         },
         credentials: 'include',
+        signal: retryController.signal,
       })
+      clearTimeout(retryTimeoutId)
     } else {
       clearCsrfToken()
       window.location.href = '/profile'
@@ -302,6 +331,10 @@ export const propertyApi = {
 
   async mine(): Promise<Property[]> {
     return request<Property[]>(API_ROUTES.PROPERTIES.MINE)
+  },
+
+  async featured(): Promise<Property[]> {
+    return request<Property[]>(API_ROUTES.CAROUSEL, { skipAuth: true })
   },
 }
 

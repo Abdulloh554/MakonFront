@@ -55,8 +55,8 @@ export default function SellerCard({
       onClick={onClick}
       className="cursor-pointer rounded-2xl p-4 transition-colors"
       style={{
-        background: "white",
-        border: "1.5px solid rgba(226,232,240,0.8)",
+        background: "var(--surface)",
+        border: "1.5px solid var(--gray-200)",
         boxShadow: "0 2px 8px rgba(15,23,42,0.05)",
       }}
     >

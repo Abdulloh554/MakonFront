@@ -40,11 +40,11 @@ export default function MapPropertyPanel({ properties, onLocate }: MapPropertyPa
           style={{
             background: open
               ? 'linear-gradient(135deg, #185FA5, #378ADD)'
-              : 'rgba(255,255,255,0.95)',
+              : 'var(--glass-panel-bg)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
-            color: open ? 'white' : '#0f172a',
-            border: open ? 'none' : '1.5px solid rgba(226,232,240,0.9)',
+            color: open ? 'white' : 'var(--gray-900)',
+            border: open ? 'none' : '1.5px solid var(--gray-200)',
             boxShadow: open
               ? '0 6px 20px rgba(24,95,165,0.35)'
               : '0 4px 12px rgba(15,23,42,0.10)',
@@ -65,7 +65,7 @@ export default function MapPropertyPanel({ properties, onLocate }: MapPropertyPa
             transition={{ type: 'spring', stiffness: 260, damping: 26 }}
             className="absolute left-4 top-4 bottom-4 z-[1001] flex flex-col w-80 max-w-[85vw] rounded-2xl overflow-hidden"
             style={{
-              background: 'rgba(255,255,255,0.96)',
+              background: 'var(--glass-panel-bg)',
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
               boxShadow: '0 8px 40px rgba(15,23,42,0.15)',

@@ -1,28 +1,27 @@
 'use client'
 
 import { useState } from 'react'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, MapPin, User, LogIn } from 'lucide-react'
 import PropertyCard from '@/components/features/properties/PropertyCard'
 import FilterBar from '@/components/features/properties/FilterBar'
-import PropertyModal from '@/components/features/properties/PropertyModal'
+import dynamic from 'next/dynamic'
+
+const PropertyModal = dynamic(() => import('@/components/features/properties/PropertyModal'), { ssr: false })
 import PageTransition from '@/components/layout/PageTransition'
 import StaggerGrid, { StaggerItem } from '@/components/layout/StaggerGrid'
 import EmptyState from '@/components/ui/EmptyState'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useProperties } from '@/queries/property.queries'
 import type { FilterOptions, Property } from '@/types'
-import { motion } from 'framer-motion'
-import { SearchX, MapPin } from 'lucide-react'
-
-const gradientMesh = {
-  background: `
-    radial-gradient(ellipse 80% 60% at 0% 0%, rgba(24,95,165,0.08) 0%, transparent 100%),
-    radial-gradient(ellipse 60% 50% at 100% 0%, rgba(55,138,221,0.06) 0%, transparent 100%),
-    radial-gradient(ellipse 50% 40% at 50% 100%, rgba(99,102,241,0.04) 0%, transparent 100%)
-  `,
-}
+import { SearchX } from 'lucide-react'
+import FeaturedCarousel from '@/components/features/carousel/FeaturedCarousel'
+import Link from 'next/link'
+import { useAuthStore } from '@/store/auth.store'
+import { useHydrated } from '@/hooks/useHydrated'
+import { useI18n } from '@/lib/i18n/I18nContext'
+import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
 
 export default function HomePage() {
+  const { t } = useI18n()
   const [filters, setFilters] = useState<FilterOptions>({
     dealType: 'all', propertyType: 'all', status: 'all',
     minPrice: undefined, maxPrice: undefined, search: '',
@@ -30,105 +29,113 @@ export default function HomePage() {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
 
   const { data: properties = [], isLoading } = useProperties(filters)
+  const user = useAuthStore((s) => s.user)
+  const hydrated = useHydrated()
 
   return (
     <PageTransition>
-      <div
-        className="sticky top-0 lg:top-0 z-20 border-b border-gray-100/80 px-4 md:px-6 lg:px-8 pt-4 pb-3"
-        style={gradientMesh}
-      >
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-          className="flex items-center justify-between mb-3"
-        >
-          <div>
-            <motion.h1
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.05 }}
-              className="text-xl font-black tracking-tight"
-              style={{
-                background: 'linear-gradient(135deg, #185FA5 0%, #378ADD 60%, #6366f1 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
-              E&apos;lonlar
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.1, duration: 0.3 }}
-              className="text-[11px] text-slate-400 font-medium mt-0.5"
-            >
-              Ko&apos;chmas mulk bozoridagi eng so&apos;nggi takliflar
-            </motion.p>
+      {/* Header — minimal */}
+      <header className="sticky top-0 z-20 border-b" style={{
+        background: 'var(--surface)',
+        borderColor: 'var(--border)',
+      }}>
+        <div className="flex items-center justify-between px-4 md:px-6 lg:px-8 py-3">
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-extrabold tracking-tight text-[var(--text-primary)]">
+              Makon
+            </h1>
+            <span className="hidden sm:inline text-[11px] font-medium text-[var(--text-muted)]">
+              {t('home.hero.subtitle')}
+            </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <motion.a
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.12, type: 'spring', stiffness: 300 }}
-              href="/map"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all"
-              style={{
-                background: 'rgba(24,95,165,0.08)',
-                color: '#185FA5',
-                border: '1px solid rgba(24,95,165,0.15)',
-              }}
-            >
-              <MapPin className="w-3 h-3" />
-              Xaritada topish
-            </motion.a>
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.15, type: 'spring', stiffness: 300 }}
-              className="relative"
-            >
-              <div
-                className="absolute inset-0 rounded-full"
+            <LanguageSwitcher />
+            {hydrated && user ? (
+              <Link
+                href="/profile"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-full text-[11px] font-bold transition-all hover:opacity-80"
+                style={{ background: 'var(--primary)', color: '#fff' }}
+              >
+                <User className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t('profile.my_profile')}</span>
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-full text-[11px] font-bold transition-all hover:opacity-80"
                 style={{
-                  background: 'linear-gradient(135deg, #185FA5, #378ADD)',
-                  filter: 'blur(12px)',
-                  opacity: 0.2,
+                  background: 'var(--surface-2)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border)',
                 }}
-              />
-              <div className="relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-white/60 shadow-sm">
-                <Sparkles className="w-3 h-3 text-amber-500" />
-                <span className="text-[11px] font-bold text-slate-700">{properties.length} ta elon</span>
-              </div>
-            </motion.div>
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t('home.profile_button')}</span>
+              </Link>
+            )}
           </div>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.4 }}
-        >
+        <div className="px-4 md:px-6 lg:px-8 pb-4">
           <FilterBar filters={filters} onChange={setFilters} />
-        </motion.div>
+        </div>
+      </header>
+
+      {/* Featured carousel */}
+      <FeaturedCarousel onSelect={(p) => setSelectedProperty(p)} />
+
+      {/* Stats + map row */}
+      <div className="px-4 md:px-6 lg:px-8 py-3 flex items-center gap-3">
+        <div
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[12px] font-bold"
+          style={{
+            background: 'var(--surface-2)',
+            color: 'var(--text-secondary)',
+            border: '1px solid var(--border)',
+          }}
+        >
+          <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--accent-gold)' }} />
+          {t('home.stats_count', { count: properties.length })}
+        </div>
+
+        <Link
+          href="/map"
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[12px] font-bold transition-all hover:opacity-80"
+          style={{
+            background: 'var(--surface-2)',
+            color: 'var(--primary)',
+            border: '1px solid var(--border)',
+          }}
+        >
+          <MapPin className="w-3.5 h-3.5" />
+          {t('home.map_button')}
+        </Link>
       </div>
 
-      <div className="flex-1 px-4 md:px-6 lg:px-8 pt-5 pb-28 lg:pb-8">
+      {/* Property grid */}
+      <div className="flex-1 px-4 md:px-6 lg:px-8 pt-2 pb-28 lg:pb-8">
         {isLoading ? (
-          <div className="flex-1 flex items-center justify-center min-h-[40vh]">
-            <LoadingSpinner />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="skeleton-card">
+                <div className="skeleton-card-img" />
+                <div className="skeleton-card-body">
+                  <div className="skeleton-line" style={{ width: '40%' }} />
+                  <div className="skeleton-line" />
+                  <div className="skeleton-line skeleton-line-short" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : properties.length === 0 ? (
           <EmptyState
-            icon={<SearchX className="w-8 h-8 text-slate-300" />}
-            title="Hech narsa topilmadi"
+            icon={<SearchX className="w-8 h-8" style={{ color: 'var(--text-muted)' }} />}
+            title={t('search.no_results')}
             description="Boshqa filtrlarni sinab ko'ring"
           />
         ) : (
-          <StaggerGrid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <StaggerGrid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {properties.map((p) => (
               <StaggerItem key={p.id}>
                 <PropertyCard property={p} onClick={() => setSelectedProperty(p)} />

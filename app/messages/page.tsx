@@ -15,6 +15,7 @@ import { useHydrated } from "@/hooks/useHydrated";
 import { messageApi } from "@/services/api";
 import { useSocket } from "@/hooks/useSocket";
 
+import { useI18n } from "@/lib/i18n/I18nContext";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ArrowLeft, MessageSquare, Send, ChevronDown } from "lucide-react";
 import AuthRequired from "@/components/features/auth/AuthRequired";
@@ -27,6 +28,7 @@ import TypingIndicator from "@/components/messages/TypingIndicator";
 import { motion } from "framer-motion";
 
 function MessagesContent() {
+  const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const propertyId = searchParams.get("property");
@@ -115,7 +117,7 @@ function MessagesContent() {
   const partnerName = useMemo(() => {
     if (displaySeller?.name) return displaySeller.name;
     if (conversationPartnerId) return resolveUserName(conversationPartnerId);
-    return "Sotuvchi bilan suhbat";
+    return t('messages.title');
   }, [displaySeller, conversationPartnerId, resolveUserName]);
 
   const [loadingRemoteMessages, setLoadingRemoteMessages] = useState(false);
@@ -326,8 +328,8 @@ function MessagesContent() {
   return (
     <PageTransition>
       <PageHeader
-        title="Xabarlar"
-        subtitle="Sotuvchilar bilan suhbat"
+        title={t('messages.title')}
+        subtitle=""
         icon={
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center shadow-sm">
             <MessageSquare className="w-4 h-4 text-white" />
@@ -344,14 +346,14 @@ function MessagesContent() {
               className="md:hidden fixed top-4 left-4 z-20 flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 bg-white/95 rounded-full px-3.5 py-2 shadow-md border border-gray-200 backdrop-blur-sm"
             >
               <ArrowLeft className="w-4 h-4" />
-              Orqaga
+              {t('common.back')}
             </motion.button>
           )}
 
           <div className={`flex-col min-h-0 pb-16 md:pb-0 ${showChat ? "hidden md:flex" : "flex"} w-full md:w-80 lg:w-96 shrink-0 border-r border-gray-200 pr-0 md:pr-4 overflow-y-auto`}>
             <div className="pb-2">
               <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-1 mb-2">
-                Barcha xabarlar
+                {t('messages.title')}
               </h2>
               {loadingConversations ? (
                 <div className="space-y-2">
@@ -362,8 +364,8 @@ function MessagesContent() {
               ) : conversations.length === 0 ? (
                 <EmptyState
                   icon={<MessageSquare className="w-6 h-6 text-gray-300" />}
-                  title="Xabarlar yo'q"
-                  description="Biror elonga xabar yozing"
+                  title={t('messages.no_conversations')}
+                  description=""
                 />
               ) : (
                 <div className="space-y-1">
@@ -401,7 +403,7 @@ function MessagesContent() {
                             )}
                           </div>
                           <p className={`text-xs truncate mt-0.5 ${conv.unread > 0 ? "text-gray-600 font-medium" : "text-gray-400"}`}>
-                            {conv.lastMessage || "Xabar yo'q"}
+                            {conv.lastMessage || t('messages.no_conversations')}
                           </p>
                         </div>
                         <span className="text-[10px] text-gray-400 shrink-0">
@@ -437,13 +439,13 @@ function MessagesContent() {
                     </p>
                     <p className="text-xs text-gray-500">
                       {onlineUsers.has(conversationPartnerId || "")
-                        ? "Online"
-                        : "Offline"}
+                        ? t('common.yes')
+                        : t('common.no')}
                     </p>
                   </div>
                   {!connected && (
                     <span className="text-[10px] text-amber-500 bg-amber-50 px-2 py-1 rounded-full">
-                      Ulanmoqda...
+                      {t('common.loading')}
                     </span>
                   )}
                 </div>
@@ -464,8 +466,8 @@ function MessagesContent() {
                   ) : chatMessages.length === 0 && !partnerTyping ? (
                     <EmptyState
                       icon={<MessageSquare className="w-6 h-6 text-gray-300" />}
-                      title="Hozircha xabar yo'q"
-                      description="Birinchi xabarni yozing"
+                      title={t('messages.no_conversations')}
+                      description=""
                     />
                   ) : (
                     <>
@@ -498,13 +500,13 @@ function MessagesContent() {
                 <div className="sticky bottom-0 z-10 border-t border-slate-200 bg-white rounded-b-[32px] p-4">
                   {editingMessageId && (
                     <div className="flex items-center justify-between gap-4 px-2 pb-2 text-xs text-gray-500">
-                      <span>Xabarni tahrirlash rejimida</span>
+                      <span>{t('common.edit')}</span>
                       <button
                         type="button"
                         onClick={handleCancelEdit}
                         className="font-medium text-blue-600 hover:text-blue-800"
                       >
-                        Bekor qilish
+                        {t('common.cancel')}
                       </button>
                     </div>
                   )}
@@ -514,9 +516,9 @@ function MessagesContent() {
                       value={newMessage}
                       onChange={(e) => handleInputChange(e.target.value)}
                       onKeyDown={handleInputKeyDown}
-                      placeholder={editingMessageId ? "Xabarni tahrirlash..." : "Xabar yozish..."}
+                      placeholder={editingMessageId ? t('common.edit') : t('messages.type_placeholder')}
                       rows={1}
-                      aria-label={editingMessageId ? "Xabarni tahrirlash" : "Xabar yozish"}
+                      aria-label={editingMessageId ? t('common.edit') : t('messages.type_placeholder')}
                       className="flex-1 px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none resize-none min-h-[42px] max-h-[120px] leading-relaxed"
                       style={{ height: "auto" }}
                       onInput={(e) => {
@@ -529,7 +531,7 @@ function MessagesContent() {
                       whileTap={{ scale: 0.9 }}
                       onClick={handleSend}
                       disabled={!newMessage.trim()}
-                      aria-label="Xabarni yuborish"
+                      aria-label={t('messages.send')}
                       className="p-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-all shrink-0"
                     >
                       <Send className="w-5 h-5" />
@@ -541,8 +543,8 @@ function MessagesContent() {
               <div className="h-full flex items-center justify-center">
                 <EmptyState
                   icon={<MessageSquare className="w-10 h-10 text-gray-300" />}
-                  title="Xabarlar"
-                  description="Chapdagi ro'yxatdan suhbatni tanlang"
+                  title={t('messages.title')}
+                  description=""
                 />
               </div>
             )}

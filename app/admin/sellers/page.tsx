@@ -4,10 +4,12 @@ import { useState, useEffect, useCallback, startTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { apiAdminSellers, apiAdminDeleteSeller, isAdminLoggedIn } from '@/services/admin'
+import { useI18n } from '@/lib/i18n/I18nContext'
 
 
 export default function AdminSellers() {
   const router = useRouter()
+  const { t } = useI18n()
   const [sellers, setSellers] = useState<Record<string, unknown>[]>([])
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
@@ -43,7 +45,7 @@ export default function AdminSellers() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Sotuvchilar</h1>
+        <h1 className="text-xl font-bold text-gray-900">{t('admin.sellers.title')}</h1>
         <p className="text-sm text-gray-500 mt-0.5">Jami: {total}</p>
       </div>
 
@@ -52,12 +54,12 @@ export default function AdminSellers() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                <th className="px-4 py-3">Nomi</th>
-                <th className="px-4 py-3">Telefon</th>
-                <th className="px-4 py-3">Reyting</th>
-                <th className="px-4 py-3">E&apos;lonlar</th>
-                <th className="px-4 py-3">Qo&apos;shilgan</th>
-                <th className="px-4 py-3 text-right">Amal</th>
+                <th className="px-4 py-3">{t('admin.sellers.name')}</th>
+                <th className="px-4 py-3">{t('admin.sellers.phone')}</th>
+                <th className="px-4 py-3">{t('admin.sellers.rating')}</th>
+                <th className="px-4 py-3">{t('admin.sellers.listings')}</th>
+                <th className="px-4 py-3">{t('admin.sellers.joined')}</th>
+                <th className="px-4 py-3 text-right">{t('admin.sellers.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -88,7 +90,7 @@ export default function AdminSellers() {
                 </tr>
               ))}
               {sellers.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-400">Sotuvchilar topilmadi</td></tr>
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-400">{t('admin.sellers.not_found')}</td></tr>
               )}
             </tbody>
           </table>

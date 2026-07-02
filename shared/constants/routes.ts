@@ -11,6 +11,7 @@ export const API_ROUTES = {
     LOGOUT: '/api/v1/auth/logout',
     REFRESH: '/api/v1/auth/refresh',
     ME: '/api/v1/auth/me',
+    CSRF: '/api/v1/auth/csrf',
     FORGOT_PASSWORD: '/api/v1/auth/forgot-password',
     RESET_PASSWORD: '/api/v1/auth/reset-password',
     GOOGLE: '/api/v1/auth/google',
@@ -18,6 +19,7 @@ export const API_ROUTES = {
     SEND_OTP: '/api/v1/auth/send-otp',
     VERIFY_REGISTRATION: '/api/v1/auth/verify-registration',
   },
+  CAROUSEL: '/api/v1/carousel',
   PROPERTIES: {
     LIST: '/api/v1/properties',
     CREATE: '/api/v1/properties',

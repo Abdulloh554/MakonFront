@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, startTransition } from 'react'
+import { useI18n } from '@/lib/i18n/I18nContext'
 import { Users, ChevronRight, Star } from 'lucide-react'
 import { motion } from 'framer-motion'
 import PageTransition from '@/components/layout/PageTransition'
@@ -14,6 +15,7 @@ import { useRouter } from 'next/navigation'
 export default function SellersPage() {
   const hydrated = useHydrated()
   const router = useRouter()
+  const { t } = useI18n()
   const [sellers, setSellers] = useState<Seller[]>([])
 
   useEffect(() => {
@@ -44,8 +46,8 @@ export default function SellersPage() {
             <Users className="w-4 h-4 text-white" />
           </motion.div>
           <div>
-            <h1 className="text-base font-bold text-gray-900">Sotuvchilar</h1>
-            <p className="text-[10px] text-gray-400 font-medium">{sellers.length} ta sotuvchi</p>
+            <h1 className="text-base font-bold text-gray-900">{t('sellers.title')}</h1>
+            <p className="text-[10px] text-gray-400 font-medium">{t('sellers.properties_count', { n: sellers.length })}</p>
           </div>
         </div>
       </motion.div>
@@ -54,8 +56,8 @@ export default function SellersPage() {
         {sellers.length === 0 ? (
           <EmptyState
             icon={<Users className="w-8 h-8 text-slate-300" />}
-            title="Hozircha sotuvchilar yo'q"
-            description="Tez orada sotuvchilar paydo bo'ladi"
+            title={t('sellers.no_sellers')}
+            description=""
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -70,8 +72,8 @@ export default function SellersPage() {
                 onClick={() => router.push(`/sellers/${seller.id}`)}
                 className="cursor-pointer rounded-2xl p-4 transition-colors"
                 style={{
-                  background: 'white',
-                  border: '1.5px solid rgba(226,232,240,0.8)',
+                  background: 'var(--surface)',
+                  border: '1.5px solid var(--gray-200)',
                   boxShadow: '0 2px 8px rgba(15,23,42,0.05)',
                 }}
               >
@@ -96,7 +98,7 @@ export default function SellersPage() {
                         <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
                         <span className="text-xs font-semibold text-amber-600">{seller.rating}</span>
                       </div>
-                      <span className="text-xs text-slate-400">{seller.totalListings} ta elon</span>
+                      <span className="text-xs text-slate-400">{t('sellers.properties_count', { n: seller.totalListings })}</span>
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />

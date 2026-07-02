@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { useI18n } from '@/lib/i18n/I18nContext'
 import { ArrowLeft, Home, MessageCircle, Star, Send, User } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import PageTransition from '@/components/layout/PageTransition'
@@ -16,6 +17,7 @@ import type { Seller, Property, Review } from '@/types'
 import { useToast } from '@/components/ui/ToastProvider'
 
 export default function SellerDetailPage() {
+  const { t } = useI18n()
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { showToast } = useToast()
@@ -59,8 +61,8 @@ export default function SellerDetailPage() {
         <div className="flex-1 flex items-center justify-center px-4">
           <EmptyState
             icon={<User className="w-8 h-8 text-slate-300" />}
-            title="Sotuvchi topilmadi"
-            action={{ label: 'Orqaga qaytish', onClick: () => router.push('/sellers') }}
+            title={t('sellers.no_sellers')}
+            action={{ label: t('common.back'), onClick: () => router.push('/sellers') }}
           />
         </div>
       </PageTransition>
@@ -85,17 +87,17 @@ export default function SellerDetailPage() {
       setReviewText('')
       setReviewRating(5)
       setShowReviewForm(false)
-      showToast('Taqriz qoldirildi', 'success')
+      showToast(t('toast.success'), 'success')
     } catch {
-      showToast('Xatolik yuz berdi', 'error')
+      showToast(t('toast.error'), 'error')
     } finally {
       setSubmitting(false)
     }
   }
 
   const tabs = [
-    { key: 'properties' as const, label: 'Elonlar', count: properties.length, icon: Home },
-    { key: 'reviews' as const, label: 'Taqrizlar', count: reviews.length, icon: Star },
+    { key: 'properties' as const, label: t('sellers.listings'), count: properties.length, icon: Home },
+    { key: 'reviews' as const, label: t('sellers.reviews'), count: reviews.length, icon: Star },
   ]
 
   return (
@@ -137,7 +139,7 @@ export default function SellerDetailPage() {
                   <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
                   <span className="font-semibold text-amber-600">{seller.rating}</span>
                 </div>
-                <span>{seller.totalListings} ta elon</span>
+                <span>{t('sellers.properties_count', { n: seller.totalListings })}</span>
               </div>
             </div>
           </div>
@@ -198,8 +200,8 @@ export default function SellerDetailPage() {
               {properties.length === 0 ? (
                 <EmptyState
                   icon={<Home className="w-8 h-8 text-slate-300" />}
-                  title="Hali elonlari yo'q"
-                  description="Bu sotuvchi hali hech qanday elon qo'shmagan"
+                  title={t('sellers.no_sellers')}
+                  description=""
                 />
               ) : (
                 <StaggerGrid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -233,7 +235,7 @@ export default function SellerDetailPage() {
                   }}
                 >
                   <Star className="w-4 h-4" />
-                  Taqriz qoldirish
+                  {t('sellers.reviews')}
                 </motion.button>
               )}
 
@@ -274,10 +276,10 @@ export default function SellerDetailPage() {
                       <textarea
                         value={reviewText}
                         onChange={(e) => setReviewText(e.target.value)}
-                        placeholder="Taqrizingizni yozing..."
+                        placeholder={t('messages.type_placeholder')}
                         className="w-full p-3 rounded-xl text-sm resize-none outline-none"
                         style={{
-                          background: 'white',
+                          background: 'var(--surface)',
                           border: '1.5px solid var(--gray-200)',
                           minHeight: 80,
                         }}
@@ -295,7 +297,7 @@ export default function SellerDetailPage() {
                           className="flex-1 py-2.5 rounded-xl text-sm font-semibold"
                           style={{ background: 'var(--gray-200)', color: 'var(--gray-600)' }}
                         >
-                          Bekor qilish
+                          {t('common.cancel')}
                         </motion.button>
                         <motion.button
                           whileHover={{ scale: 1.02 }}
@@ -308,7 +310,7 @@ export default function SellerDetailPage() {
                           }}
                         >
                           <Send className="w-3.5 h-3.5" />
-                          {submitting ? 'Yuborilmoqda...' : 'Yuborish'}
+                          {submitting ? t('common.loading') : t('messages.send')}
                         </motion.button>
                       </div>
                     </div>
@@ -320,8 +322,8 @@ export default function SellerDetailPage() {
               {reviews.length === 0 && !showReviewForm ? (
                 <EmptyState
                   icon={<Star className="w-8 h-8 text-slate-300" />}
-                  title="Hali taqrizlar yo'q"
-                  description="Birinchi taqrizni qoldiring"
+                  title={t('sellers.no_reviews')}
+                  description=""
                 />
               ) : (
                 reviews.map((review, index) => (
@@ -332,8 +334,8 @@ export default function SellerDetailPage() {
                     transition={{ duration: 0.3, delay: index * 0.05 }}
                     className="p-4 rounded-2xl"
                     style={{
-                      background: 'white',
-                      border: '1.5px solid rgba(226,232,240,0.8)',
+                      background: 'var(--surface)',
+                      border: '1.5px solid var(--gray-200)',
                       boxShadow: '0 2px 8px rgba(15,23,42,0.05)',
                     }}
                   >

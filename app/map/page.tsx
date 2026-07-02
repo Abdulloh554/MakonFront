@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useI18n } from '@/lib/i18n/I18nContext'
 import dynamic from 'next/dynamic'
 import PropertyModal from '@/components/features/properties/PropertyModal'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -13,6 +14,7 @@ import { useHydrated } from '@/hooks/useHydrated'
 import type { Property } from '@/types'
 
 export default function MapPage() {
+  const { t } = useI18n()
   const hydrated = useHydrated()
   const [properties, setProperties] = useState<Property[]>(() => getProperties())
   const mapRef = useRef<MapViewHandle>(null)
